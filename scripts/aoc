@@ -80,29 +80,39 @@ command="$1"
 shift
 
 if [ "$command" == "start" ]; then
+    outDir="$PWD/$year/$day"
+    if [ -d "$outDir" ]; then
+        echo "error: $year $day already exists"
+        exit 1
+    fi
+
     source "$PWD/.env"
 
     if [ -z "$AOC_SESSION" ]; then
-      echo "please set AOC_SESSION in .env file"
+      echo "error: please set AOC_SESSION in .env file"
       exit 1
     fi
 
     cookieHeader="Cookie: session=$AOC_SESSION"
     url="https://adventofcode.com/$year/day/$cday/input"
-    outDir="$PWD/$year/$day"
 
-    mkdir -p "$outDir"
 
     out="$outDir/puzzle.in"
 
+    http_status=$(curl -w "%{http_code}" -o "$out" -s -X GET -H "$cookieHeader" "$url")
+    if [[ "$http_status" != 2* ]]; then
+      echo "error: failed to fetch puzzle input from $url ($http_status)"
+      exit 1
+    fi
+
+    mkdir -p "$outDir"
     touch "$outDir/example.in"
     echo -e "$gomain" > "$outDir/main.go"
 
-    curl -XGET -H "$cookieHeader" "$url" | tee "$out"
 elif [ "$command" == "run" ]; then
     go run "$PWD/$year/$day/main.go" "$PWD/$year/$day"
 else
-    echo "please specify command i.e run, start"
+    echo "$usage"
     exit 1
 fi
 
