@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+
+usage="Usage: aoc year [day] (all|start|run)"
+
+if [ -z "$1" ]; then
+    echo "$usage"
+    exit 1
+fi
+
+read -r -d '' gomain << EOM
+package main
+
+import "github.com/lindeneg/aoc/cl"
+
+func main() {
+	example := cl.NewInput("example.in")
+	cl.Example(
+		cl.Ex[int]{
+			Want: 42,
+			Fn:   func() int { return puzzle(example, false) },
+		},
+		//		cl.Ex[int]{
+		//			Want: 42,
+		//			Fn:   func() int { return puzzle(example, true) },
+		//		},
+	)
+	//	input := cl.NewInput("puzzle.in")
+	//	cl.Puzzle(
+	//		cl.Ex[int]{
+	//			Want: 0,
+	//			Fn:   func() int { return puzzle(input, false) },
+	//		},
+	//		cl.Ex[int]{
+	//			Want: 0,
+	//			Fn:   func() int { return puzzle(input, true) },
+	//		},
+	//	)
+}
+
+func puzzle(input cl.Input, _ bool) int {
+	return 0
+}
+EOM
+
+year="$1"
+shift
+
+if [ "$1" == "all" ]; then
+    for i in {1..25}; do
+        f="day"
+        if [ "$i" -lt 10 ]; then
+            f="0$i"
+        else
+            f="$i"
+        fi
+        if [ ! -d "$PWD/$year/$f" ]; then
+            continue
+        fi
+        echo "Day $i:"
+        aoc "$year" "$i" run
+        echo -e "\n"
+    done
+    exit 0
+fi
+
+day="$1"
+cday="$day"
+shift
+
+if [ "$day" -lt 10 ]; then
+    day="0$day"
+fi
+
+if [ -z "$1" ]; then
+    echo "$usage"
+    exit 1
+fi
+
+command="$1"
+shift
+
+if [ "$command" == "start" ]; then
+    source "$PWD/.env"
+
+    if [ -z "$AOC_SESSION" ]; then
+      echo "please set AOC_SESSION in .env file"
+      exit 1
+    fi
+
+    cookieHeader="Cookie: session=$AOC_SESSION"
+    url="https://adventofcode.com/$year/day/$cday/input"
+    outDir="$PWD/$year/$day"
+
+    mkdir -p "$outDir"
+
+    out="$outDir/puzzle.in"
+
+    touch "$outDir/example.in"
+    echo -e "$gomain" > "$outDir/main.go"
+
+    curl -XGET -H "$cookieHeader" "$url" | tee "$out"
+elif [ "$command" == "run" ]; then
+    go run "$PWD/$year/$day/main.go" "$PWD/$year/$day"
+else
+    echo "please specify command i.e run, start"
+    exit 1
+fi
+
