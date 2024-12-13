@@ -80,7 +80,8 @@ command="$1"
 shift
 
 if [ "$command" == "start" ]; then
-    outDir="$PWD/$year/$day"
+    rootDir="$PWD/$year"
+    outDir="$rootDir/$day"
     if [ -d "$outDir" ]; then
         echo "error: $year $day already exists"
         exit 1
@@ -97,15 +98,16 @@ if [ "$command" == "start" ]; then
     url="https://adventofcode.com/$year/day/$cday/input"
 
 
+    mkdir -p "$outDir"
     out="$outDir/puzzle.in"
 
     http_status=$(curl -w "%{http_code}" -o "$out" -s -X GET -H "$cookieHeader" "$url")
     if [[ "$http_status" != 2* ]]; then
       echo "error: failed to fetch puzzle input from $url ($http_status)"
+      rm -rf "$rootDir"
       exit 1
     fi
 
-    mkdir -p "$outDir"
     touch "$outDir/example.in"
     echo -e "$gomain" > "$outDir/main.go"
 
