@@ -22,6 +22,46 @@ func (v Vec2) Add(v2 Vec2) Vec2 {
 	return Vec2{v.X + v2.X, v.Y + v2.Y}
 }
 
+func (v Vec2) Up() Vec2 {
+	return Vec2{v.X, v.Y - 1}
+}
+
+func (v Vec2) Down() Vec2 {
+	return Vec2{v.X, v.Y + 1}
+}
+
+func (v Vec2) Left() Vec2 {
+	return Vec2{v.X - 1, v.Y}
+}
+
+func (v Vec2) Right() Vec2 {
+	return Vec2{v.X + 1, v.Y}
+}
+
+func (v Vec2) UpRight() Vec2 {
+	return Vec2{v.X + 1, v.Y - 1}
+}
+
+func (v Vec2) UpLeft() Vec2 {
+	return Vec2{v.X - 1, v.Y - 1}
+}
+
+func (v Vec2) DownRight() Vec2 {
+	return Vec2{v.X + 1, v.Y + 1}
+}
+
+func (v Vec2) DownLeft() Vec2 {
+	return Vec2{v.X - 1, v.Y + 1}
+}
+
+func (v Vec2) String() string {
+	return fmt.Sprintf("(%d,%d)", v.X, v.Y)
+}
+
+func (v Vec2) Equals(v2 Vec2) bool {
+	return v.X == v2.X && v.Y == v2.Y
+}
+
 func (v Vec2) Vec3(n int) Vec3 {
 	return Vec3{v.X, v.Y, n}
 }
@@ -50,6 +90,14 @@ func (v Vec3) Copy() Vec3 {
 	return Vec3{v.X, v.Y, v.Z}
 }
 
+func (v Vec3) Scale(s int) Vec3 {
+	return Vec3{v.X * s, v.Y * s, v.Z * s}
+}
+
+func (v Vec3) Sub(v2 Vec3) Vec3 {
+    return Vec3{v.X - v2.X, v.Y - v2.Y, v.Z - v2.Z}
+}
+
 type I2 [][]int
 type R2 [][]string
 
@@ -74,6 +122,9 @@ func (r R2) ValidIdx(v Vec2) bool {
 }
 
 func (r R2) V(v Vec2) string {
+	if !r.ValidIdx(v) {
+		return ""
+	}
 	return r[v.Y][v.X]
 }
 
@@ -96,6 +147,10 @@ func NewInputS(p string) Input {
 	return NewInputEx(p, "", false)
 }
 
+func NewInputSS(p string) Input {
+	return NewInputEx(p, " ", false)
+}
+
 func NewInputD(p string) Input {
 	return NewInputEx(p, "\n\n", false)
 }
@@ -110,6 +165,7 @@ func NewInputEx(p string, sep string, i2 bool) Input {
 		panic(err)
 	}
 	a2d.B = bytes.ReplaceAll(data, []byte{13}, []byte{})
+	a2d.B = bytes.TrimSpace(a2d.B)
 	ss := strings.TrimSpace(string(a2d.B))
 	a2d.R1 = strings.Split(ss, sep)
 
