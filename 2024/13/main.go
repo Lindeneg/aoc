@@ -58,18 +58,16 @@ func parseMachine(v string, part2 bool) int {
 	return solve(a, b, p)
 }
 
-// this only works because the input seems to either
-// have one unique solution or no solution at all
 func solve(a, b, p cl.Vec2) int {
-	// (A * a.X) + (B * b.X) = p.X
-	// (A * a.Y) + (B * b.Y) = p.Y
-	eq1 := cl.Vec3{X: a.X, Y: b.X, Z: p.X}
-	eq2 := cl.Vec3{X: a.Y, Y: b.Y, Z: p.Y}
-	sub := eq1.Scale(b.Y).Sub(eq2.Scale(b.X))
-	A := (sub.Z / sub.X)
+	if (a.X*b.Y)-(b.X*a.Y) == 0 {
+		return 0
+	}
+	eq1 := cl.V3(a.X, b.X, p.X)
+	eq2 := cl.V3(a.Y, b.Y, p.Y)
+	elim := eq1.Scale(b.Y).Sub(eq2.Scale(b.X))
+	A := elim.Z / elim.X
 	B := (eq1.Z - (eq1.X * A)) / eq1.Y
-	pos := cl.Vec2{X: (a.X * A) + (b.X * B), Y: (a.Y * A) + (b.Y * B)}
-	if !pos.Equals(p) {
+	if !cl.V2((a.X*A)+(b.X*B), (a.Y*A)+(b.Y*B)).Equals(p) {
 		return 0
 	}
 	return (A * 3) + B

@@ -95,7 +95,7 @@ func (v Vec3) Scale(s int) Vec3 {
 }
 
 func (v Vec3) Sub(v2 Vec3) Vec3 {
-    return Vec3{v.X - v2.X, v.Y - v2.Y, v.Z - v2.Z}
+	return Vec3{v.X - v2.X, v.Y - v2.Y, v.Z - v2.Z}
 }
 
 type I2 [][]int
@@ -156,14 +156,8 @@ func NewInputD(p string) Input {
 }
 
 func NewInputEx(p string, sep string, i2 bool) Input {
-	if len(os.Args) > 1 {
-		p = filepath.Join(os.Args[1], p)
-	}
 	var a2d Input
-	data, err := os.ReadFile(p)
-	if err != nil {
-		panic(err)
-	}
+	data := ReadFile(p)
 	a2d.B = bytes.ReplaceAll(data, []byte{13}, []byte{})
 	a2d.B = bytes.TrimSpace(a2d.B)
 	ss := strings.TrimSpace(string(a2d.B))
@@ -184,6 +178,17 @@ func NewInputEx(p string, sep string, i2 bool) Input {
 		}
 	}
 	return a2d
+}
+
+func ReadFile(p string) []byte {
+	if len(os.Args) > 1 {
+		p = filepath.Join(os.Args[1], p)
+	}
+	data, err := os.ReadFile(p)
+	if err != nil {
+		panic(err)
+	}
+	return data
 }
 
 func out[T any](r [][]T) {
