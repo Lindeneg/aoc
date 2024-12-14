@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-
 	"github.com/lindeneg/aoc/cl"
 )
 
@@ -76,7 +74,7 @@ func hasIllegal(B ...byte) bool {
 			return true
 		}
 	}
-	return bytes.ContainsAny(B, "iol")
+	return false
 }
 
 func hasStraight(B []byte) bool {
