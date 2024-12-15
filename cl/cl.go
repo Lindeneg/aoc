@@ -100,6 +100,26 @@ func (v Vec3) Sub(v2 Vec3) Vec3 {
 
 type I2 [][]int
 type R2 [][]string
+type B2 [][]byte
+
+func (b B2) Print() {
+	for _, v := range b {
+		fmt.Println(string(v))
+	}
+	fmt.Println()
+}
+
+func (b B2) V(v Vec2) byte {
+	return b[v.Y][v.X]
+}
+
+func (b B2) S(v Vec2, n byte) {
+	b[v.Y][v.X] = n
+}
+
+func (b B2) ValidIdx(v Vec2) bool {
+	return ValidIndicies(len(b), len(b[0]), v.X, v.Y)
+}
 
 func (i I2) Print() {
 	out(i)
@@ -130,6 +150,7 @@ func (r R2) V(v Vec2) string {
 
 type Input struct {
 	B  []byte
+	B1 [][]byte
 	R1 []string
 	R2
 	I2
@@ -162,6 +183,7 @@ func NewInputEx(p string, sep string, i2 bool) Input {
 	a2d.B = bytes.TrimSpace(a2d.B)
 	ss := strings.TrimSpace(string(a2d.B))
 	a2d.R1 = strings.Split(ss, sep)
+	a2d.B1 = bytes.Split(a2d.B, []byte(sep))
 
 	a2d.R2 = make([][]string, len(a2d.R1))
 	if i2 {
@@ -287,4 +309,11 @@ func AbsInt(x int) int {
 		return -x
 	}
 	return x
+}
+
+func Factorial(n int) int {
+	if n == 0 {
+		return 1
+	}
+	return n * Factorial(n-1)
 }
