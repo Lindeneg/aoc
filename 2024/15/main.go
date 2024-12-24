@@ -6,39 +6,25 @@ import (
 	"github.com/lindeneg/aoc/cl"
 )
 
-const (
-	Robot    byte = '@'
-	Box      byte = 'O'
-	Wall     byte = '#'
-	Free     byte = '.'
-	BoxStart byte = '['
-	BoxEnd   byte = ']'
-
-	Up    byte = '^'
-	Down  byte = 'v'
-	Left  byte = '<'
-	Right byte = '>'
-)
-
 var directions = map[byte]cl.Vec2{
-	Up:    cl.V2(0, -1),
-	Down:  cl.V2(0, 1),
-	Left:  cl.V2(-1, 0),
-	Right: cl.V2(1, 0),
+	'^': cl.V2(0, -1),
+	'v': cl.V2(0, 1),
+	'<': cl.V2(-1, 0),
+	'>': cl.V2(1, 0),
 }
 
 func main() {
-	//	example1 := cl.NewInputD("example1.in")
+	example1 := cl.NewInputD("example1.in")
 	example2 := cl.NewInputD("example2.in")
 	cl.Example(
-		//		cl.Ex[int]{
-		//			Want: 2028,
-		//			Fn:   func() int { return puzzle(example1, false) },
-		//		},
-		//		cl.Ex[int]{
-		//			Want: 10092,
-		//			Fn:   func() int { return puzzle(example2, false) },
-		//		},
+		cl.Ex[int]{
+			Want: 2028,
+			Fn:   func() int { return puzzle(example1, false) },
+		},
+		cl.Ex[int]{
+			Want: 10092,
+			Fn:   func() int { return puzzle(example2, false) },
+		},
 		cl.Ex[int]{
 			Want: 9021,
 			Fn:   func() int { return puzzle(example2, true) },
@@ -50,106 +36,118 @@ func main() {
 			Want: 1430439,
 			Fn:   func() int { return puzzle(input, false) },
 		},
-		//		cl.Ex[int]{
-		//			Want: 0,
-		//			Fn:   func() int { return puzzle(input, true) },
-		//		},
+		cl.Ex[int]{
+			Want: 1458740,
+			Fn:   func() int { return puzzle(input, true) },
+		},
 	)
 }
 
 func puzzle(input cl.Input, part2 bool) int {
-	B2, r := grid(bytes.Split(input.B1[0], []byte{10}), part2)
-	i := 0
-	for i < len(input.B1[1]) {
-		c := input.B1[1][i]
-		switch c {
-		case Up, Down, Left, Right:
-			r = move(B2, directions[c], r)
+	g, r := makeMap(cl.B2(bytes.Split(input.B1[0], []byte{'\n'})), part2)
+outer:
+	for _, v := range input.B1[1] {
+		if v == '\n' {
+			continue outer
 		}
-		i++
+		np := r.Add(directions[v])
+		switch g.V(np) {
+		case '#':
+			continue outer
+		case '.':
+			r = np
+		case '[', ']', 'O':
+			q := cl.NewQueue[cl.Vec2]()
+			q.Push(r)
+			seen := cl.NewSeen[cl.Vec2]()
+			wall := false
+		inner:
+			for !q.Empty() {
+				np = q.Pop()
+				if seen.Has(np) {
+					continue inner
+				}
+				seen.Add(np)
+				nnp := np.Add(directions[v])
+				switch g.V(nnp) {
+				case '#':
+					wall = true
+					break inner
+				case 'O':
+					q.Push(nnp)
+				case '[':
+					q.Push(nnp)
+					right := nnp.Right()
+					cl.AssertE(g.V(right), ']')
+					q.Push(right)
+				case ']':
+					q.Push(nnp)
+					left := nnp.Left()
+					cl.AssertE(g.V(left), '[')
+					q.Push(left)
+				}
+			}
+			if wall {
+				continue outer
+			}
+			for seen.Len() > 0 {
+				keys := seen.Sorted(cl.Vec2Less)
+				for _, k := range keys {
+					nk := k.Add(directions[v])
+					if !seen.Has(nk) {
+						cl.AssertE(g.V(nk), '.')
+						g.S(nk, g.V(k))
+						g.S(k, '.')
+						seen.Remove(k)
+					}
+				}
+			}
+			r = r.Add(directions[v])
+		}
 	}
-	return sumPositions(B2)
+	return sumPositions(g)
 }
 
 func sumPositions(B2 cl.B2) int {
 	ans := 0
 	for y := 0; y < len(B2); y++ {
 		for x := 0; x < len(B2[y]); x++ {
-			p := cl.V2(x, y)
-			if B2.V(p) == Box {
-				ans += ((100 * p.Y) + p.X)
+			v := B2.V(cl.V2(x, y))
+			if v == '[' || v == 'O' {
+				ans += (100 * y) + x
 			}
 		}
 	}
 	return ans
 }
 
-func move(B2 cl.B2, dir cl.Vec2, r cl.Vec2) cl.Vec2 {
-	np := r.Add(dir)
-	if !B2.ValidIdx(np) {
-		return r
-	}
-	next := B2.V(np)
-	switch next {
-	case Wall:
-		return r
-	case Free:
-		B2.S(r, Free)
-		B2.S(np, Robot)
-		return np
-	case Box:
-		boxes := []cl.Vec2{}
-		nn := np
-		for {
-			if B2.V(nn) != Box {
-				break
-			}
-			boxes = append(boxes, nn)
-			nn = nn.Add(dir)
-		}
-
-		last := boxes[len(boxes)-1]
-		if B2.V(last.Add(dir)) != Free {
-			return r
-		}
-		B2.S(r, Free)
-		B2.S(last.Add(dir), Box)
-		B2.S(np, Robot)
-		return np
-	}
-	return r
-}
-
-func grid(B2 cl.B2, part2 bool) (cl.B2, cl.Vec2) {
-	g := make(cl.B2, len(B2))
-	var robot cl.Vec2
+func makeMap(B2 cl.B2, part2 bool) (cl.B2, cl.Vec2) {
+	g := cl.B2{}
+	var rp cl.Vec2
 	for y := 0; y < len(B2); y++ {
+		r := []byte{}
 		for x := 0; x < len(B2[y]); x++ {
 			p := cl.V2(x, y)
 			c := B2.V(p)
-			arr := []byte{}
-			if c == Robot {
-				robot = p
-			}
 			if part2 {
 				switch c {
-				case Robot:
-					g[y] = append(g[y], Robot, Free)
-					break
-				case Box:
-					g[y] = append(g[y], BoxStart, BoxEnd)
-					break
+				case 'O':
+					r = append(r, '[', ']')
+				case '@':
+					rp = cl.V2(p.X*2, p.Y)
+					r = append(r, '.', '.')
 				default:
-					arr = append(arr, c, c)
+					r = append(r, c, c)
 				}
 			} else {
-				arr = append(arr, c)
-			}
-			for _, v := range arr {
-				g[y] = append(g[y], v)
+				if c == '@' {
+					rp = p
+					c = '.'
+				}
+				r = append(r, c)
 			}
 		}
+		g = append(g, r)
 	}
-	g.Print()
-	return g, robot
+	return g, rp
 }

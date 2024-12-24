@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/lindeneg/aoc/cl"
 )
@@ -32,7 +33,7 @@ func main() {
 }
 
 func puzzle(input cl.Input, part2 bool) int {
-	left, right := cl.LeftRightInts(input.R1)
+	left, right := LeftRightInts(input.R1)
 	if part2 {
 		return puzzle2(left, right)
 	}
@@ -72,4 +73,20 @@ func occurances(n int, right []int) int {
 	ans := n * count
 	cache[n] = ans
 	return ans
+}
+
+func LeftRightInts(lines []string) ([]int, []int) {
+	left := make([]int, 0)
+	right := make([]int, 0)
+	for _, line := range lines {
+		entries := strings.Split(line, " ")
+		l := strings.TrimSpace(entries[0])
+		r := strings.TrimSpace(entries[len(entries)-1])
+		if l == "" || r == "" {
+			break
+		}
+		left = append(left, cl.Number(l))
+		right = append(right, cl.Number(r))
+	}
+	return left, right
 }
