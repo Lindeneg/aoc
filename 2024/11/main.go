@@ -87,7 +87,7 @@ func makeStones(R1 []string) []int {
 }
 
 func splitNumber(n int) (int, int, bool) {
-	digitCount := int(math.Floor(math.Log10(float64(n)))) + 1
+	digitCount := cl.DigitCount(n)
 	if digitCount%2 != 0 {
 		return 0, 0, false
 	}

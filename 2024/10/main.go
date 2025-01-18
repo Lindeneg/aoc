@@ -58,30 +58,12 @@ func puzzle(input cl.Input, part2 bool) int {
 	return ans
 }
 
-type queue struct {
-	q []cl.Vec2
-}
-
-func (q *queue) push(v cl.Vec2) {
-	q.q = append(q.q, v)
-}
-
-func (q *queue) pop() cl.Vec2 {
-	v := q.q[0]
-	q.q = q.q[1:]
-	return v
-}
-
-func (q *queue) empty() bool {
-	return len(q.q) == 0
-}
-
 func solve(I2 cl.I2, pos cl.Vec2, countMap map[cl.Vec2]int, part2 bool) {
-	q := queue{}
+	q := cl.NewQueue[cl.Vec2]()
 	explored := map[cl.Vec2]bool{}
-	q.push(pos)
-	for !q.empty() {
-		v := q.pop()
+	q.Push(pos)
+	for !q.Empty() {
+		v := q.Pop()
 		if I2.V(v) == Trailhead {
 			countMap[v]++
 			continue
@@ -93,7 +75,7 @@ func solve(I2 cl.I2, pos cl.Vec2, countMap map[cl.Vec2]int, part2 bool) {
 			}
 			if I2.V(nv) == I2.V(v)-1 {
 				explored[nv] = true
-				q.push(nv)
+				q.Push(nv)
 			}
 		}
 	}

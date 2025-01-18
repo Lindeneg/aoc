@@ -2,20 +2,165 @@ package cl
 
 import (
 	"bytes"
+	"container/heap"
 	"fmt"
+	"log"
+	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
+func Assert(c bool) {
+	AssertM(c, "assertion failed")
+}
+
+func AssertM(c bool, m string, args ...any) {
+	if !c {
+		log.Fatalf(m, args...)
+	}
+}
+
+func AssertE[T comparable](a, b T) {
+	if a != b {
+		log.Fatalf("%v is not equal to %v", a, b)
+	}
+}
+
+func VerifyNotReached() {
+	log.Fatalln("unwanted path reached")
+}
+
+type Queue[T any] struct {
+	q []T
+}
+
+func NewQueue[T any]() *Queue[T] {
+	return &Queue[T]{}
+}
+
+func (q *Queue[T]) Push(v T) {
+	q.q = append(q.q, v)
+}
+
+func (q *Queue[T]) Pop() T {
+	v := q.q[0]
+	q.q = q.q[1:]
+	return v
+}
+
+func (q *Queue[T]) Empty() bool {
+	return len(q.q) == 0
+}
+
+type Prio[T comparable] struct {
+	q    []T
+	less func(a T, b T) bool
+}
+
+func NewPrio[T comparable](less func(a T, b T) bool) *Prio[T] {
+	p := &Prio[T]{q: make([]T, 0), less: less}
+	heap.Init(p)
+	return p
+}
+
+func (pq *Prio[T]) Add(v T) {
+	heap.Push(pq, v)
+}
+
+func (pq *Prio[T]) Next() T {
+	t := heap.Pop(pq)
+	return t.(T)
+}
+
+func (pq *Prio[T]) Len() int { return len(pq.q) }
+
+func (pq *Prio[T]) Less(i, j int) bool {
+	return pq.less(pq.q[i], pq.q[j])
+}
+
+func (pq *Prio[T]) Empty() bool {
+	return pq.Len() == 0
+}
+
+func (pq *Prio[T]) Swap(i, j int) {
+	pq.q[i], pq.q[j] = pq.q[j], pq.q[i]
+}
+
+func (pq *Prio[T]) Push(x interface{}) {
+	pq.q = append(pq.q, x.(T))
+}
+
+func (pq *Prio[T]) Pop() interface{} {
+	old := pq.q
+	n := len(old)
+	x := old[n-1]
+	pq.q = old[0 : n-1]
+	return x
+}
+
+type Seen[T comparable] map[T]bool
+
+func NewSeen[T comparable]() Seen[T] {
+	return make(Seen[T])
+}
+
+func (s Seen[T]) Add(k T) {
+	s[k] = true
+}
+
+func (s Seen[T]) Has(k T) bool {
+	v, ok := s[k]
+	return ok && v
+}
+
+func (s Seen[T]) Remove(k T) {
+	delete(s, k)
+}
+
+func (s Seen[T]) Len() int {
+	return len(s)
+}
+
+func (s Seen[T]) Sorted(less func(a T, b T) bool) []T {
+	keys := make([]T, 0)
+	for k, v := range s {
+		if v {
+			keys = append(keys, k)
+		}
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return less(keys[i], keys[j])
+	})
+	return keys
+}
+
 type Vec2 struct {
 	X, Y int
 }
 
+func Vec2Less(a Vec2, b Vec2) bool {
+	return (a.X + a.Y) < (b.X + b.Y)
+}
+
 func V2(x, y int) Vec2 {
 	return Vec2{x, y}
+}
+
+func V2Zero() Vec2 {
+	return Vec2{0, 0}
+}
+
+func (v Vec2) Magnitude() int {
+	return (v.X * v.X) + (v.Y * v.Y)
+}
+
+func (v Vec2) Distance(v2 Vec2) int {
+	dv := V2(v2.X-v.X, v2.Y-v.Y)
+	return int(math.Sqrt(float64(dv.Magnitude())))
 }
 
 func (v Vec2) Add(v2 Vec2) Vec2 {
@@ -100,6 +245,29 @@ func (v Vec3) Sub(v2 Vec3) Vec3 {
 
 type I2 [][]int
 type R2 [][]string
+type B2 [][]byte
+
+func (b B2) Print() {
+	for _, v := range b {
+		fmt.Println(string(v))
+	}
+	fmt.Println()
+}
+
+func (b B2) V(v Vec2) byte {
+	if !b.ValidIdx(v) {
+		return 0
+	}
+	return b[v.Y][v.X]
+}
+
+func (b B2) S(v Vec2, n byte) {
+	b[v.Y][v.X] = n
+}
+
+func (b B2) ValidIdx(v Vec2) bool {
+	return ValidIndicies(len(b), len(b[0]), v.X, v.Y)
+}
 
 func (i I2) Print() {
 	out(i)
@@ -130,6 +298,7 @@ func (r R2) V(v Vec2) string {
 
 type Input struct {
 	B  []byte
+	B1 [][]byte
 	R1 []string
 	R2
 	I2
@@ -162,6 +331,7 @@ func NewInputEx(p string, sep string, i2 bool) Input {
 	a2d.B = bytes.TrimSpace(a2d.B)
 	ss := strings.TrimSpace(string(a2d.B))
 	a2d.R1 = strings.Split(ss, sep)
+	a2d.B1 = bytes.Split(a2d.B, []byte(sep))
 
 	a2d.R2 = make([][]string, len(a2d.R1))
 	if i2 {
@@ -213,14 +383,18 @@ func Example[T comparable](expected ...Ex[T]) {
 
 func Expect[T comparable](name string, expected ...Ex[T]) {
 	for i, v := range expected {
-		start := time.Now()
-		got := v.Fn()
-		end := time.Since(start)
-		if got != v.Want {
-			panic(fmt.Sprintf("%s %d failed\nGot : %v\nWant: %v", name, i+1, got, v.Want))
-		}
-		fmt.Printf("%s %d: %v (%s)\n", name, i+1, got, end.String())
+		ExpectRun(name, i+1, v)
 	}
+}
+
+func ExpectRun[T comparable](name string, i int, expected Ex[T]) {
+	start := time.Now()
+	got := expected.Fn()
+	end := time.Since(start)
+	if got != expected.Want {
+		panic(fmt.Sprintf("%s %d failed\nGot : %v\nWant: %v", name, i, got, expected.Want))
+	}
+	fmt.Printf("%s %d: %v (%s)\n", name, i, got, end.String())
 }
 
 func ExpectPeek(b []byte, i int, expected string) bool {
@@ -250,30 +424,6 @@ func ValidIndicies(rows, cols, x, y int) bool {
 	return 0 <= x && x < cols && 0 <= y && y < rows
 }
 
-func LeftRightInts(lines []string) ([]int, []int) {
-	left := make([]int, 0)
-	right := make([]int, 0)
-	for _, line := range lines {
-		entries := strings.Split(line, " ")
-		l := strings.TrimSpace(entries[0])
-		r := strings.TrimSpace(entries[len(entries)-1])
-		if l == "" || r == "" {
-			break
-		}
-		left = append(left, Number(l))
-		right = append(right, Number(r))
-	}
-	return left, right
-}
-
-func RepeatEx(n int, cb func(int) string) string {
-	ss := strings.Builder{}
-	for i := 0; i < n; i++ {
-		ss.WriteString(cb(i))
-	}
-	return ss.String()
-}
-
 func Number(s string) int {
 	n, err := strconv.Atoi(strings.TrimSpace(s))
 	if err != nil {
@@ -287,4 +437,67 @@ func AbsInt(x int) int {
 		return -x
 	}
 	return x
+}
+
+func DigitCount(n int) int {
+	if n == 0 {
+		return 1
+	}
+	return int(math.Log10(float64(n))) + 1
+}
+
+func Factorial(n int) int {
+	if n == 0 {
+		return 1
+	}
+	return n * Factorial(n-1)
+}
+
+type Djikstrable interface {
+	ValidIdx(Vec2) bool
+	Edges(Vec2) []Vec2
+	Obstacle(Vec2) bool
+}
+
+func Djikstra(g Djikstrable, start Vec2, end Vec2) []Vec2 {
+	path := []Vec2{}
+
+	dist := make(map[Vec2]int)
+	parent := make(map[Vec2]Vec2)
+	dist[start] = 0
+
+	q := NewPrio(func(a, b Vec3) bool {
+		return a.Z < b.Z
+	})
+	q.Push((start.Vec3(0)))
+
+	for !q.Empty() {
+		cur := q.Next()
+		pos, weight := cur.Vec2(), cur.Z
+		if pos.Equals(end) {
+			curr := end
+			for curr != start {
+				path = append(path, curr)
+				curr = parent[curr]
+			}
+			return path
+		}
+
+		for _, dir := range g.Edges(pos) {
+			edge := pos.Add(dir)
+			if !g.ValidIdx(edge) {
+				continue
+			}
+			if found := g.Obstacle(edge); found {
+				continue
+			}
+			newCost := weight + 1
+			if d, ok := dist[edge]; !ok || newCost < d {
+				dist[edge] = newCost
+				parent[edge] = pos
+				q.Add(edge.Vec3(newCost))
+			}
+		}
+	}
+	return path
 }
