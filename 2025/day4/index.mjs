@@ -1,43 +1,9 @@
 import day from "../day.mjs";
+import Grid2 from "../grid2.mjs";
 
 const PAPERROLL = "@";
 const EMPTY = ".";
 const MAX_ADJACENT_PAPERROLLS = 4;
-
-const UP = [0, -1];
-const RIGHT = [1, 0];
-const DOWN = [0, 1];
-const LEFT = [-1, 0];
-
-const UPRIGHT = [1, -1];
-const UPLEFT = [-1, -1];
-const DOWNRIGHT = [1, 1];
-const DOWNLEFT = [-1, 1];
-
-const allDirections = [
-    UP,
-    RIGHT,
-    DOWN,
-    LEFT,
-    UPRIGHT,
-    UPLEFT,
-    DOWNRIGHT,
-    DOWNLEFT,
-];
-
-function adjacentPaperRollCount(buf, x, y) {
-    let adjacentPaperRolls = 0;
-    for (const [m, n] of allDirections) {
-        const x2 = x + m;
-        const y2 = y + n;
-        if (y2 < 0 || y2 >= buf.length) continue;
-        if (x2 < 0 || x2 >= buf[0].length) continue;
-        if (buf[y2][x2] === PAPERROLL) {
-            adjacentPaperRolls++;
-        }
-    }
-    return adjacentPaperRolls;
-}
 
 const day4 = day(
     {
@@ -56,52 +22,57 @@ const day4 = day(
 );
 
 day4.setTransform((arrBuf, split) => {
-    return arrBuf
-        .toString()
-        .trimEnd()
-        .split(split)
-        .map((e) => e.split(""));
+    const grid = new Grid2(
+        arrBuf
+            .toString()
+            .trimEnd()
+            .split(split)
+            .map((e) => e.split(""))
+    );
+    return grid;
 });
 
-day4.setPart1((buf) => {
-    const rows = buf.length;
-    const cols = buf[0].length;
-
-    for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-            const value = buf[y][x];
-            if (value === EMPTY) continue;
-            if (adjacentPaperRollCount(buf, x, y) < MAX_ADJACENT_PAPERROLLS) {
-                day4.answers.part1++;
-            }
+day4.setPart1((grid) => {
+    grid.forEach((value, vec) => {
+        if (value === EMPTY) return;
+        if (canRemovePaperRoll(grid, vec)) {
+            day4.answers.part1++;
         }
-    }
+    });
 });
 
-day4.setPart2((buf) => {
-    const rows = buf.length;
-    const cols = buf[0].length;
-
-    let newBuf = buf;
+day4.setPart2((grid) => {
+    let newGrid = grid.copy();
     while (true) {
         let removedCount = 0;
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < cols; x++) {
-                const value = buf[y][x];
-                if (value === EMPTY) continue;
-                if (
-                    adjacentPaperRollCount(buf, x, y) < MAX_ADJACENT_PAPERROLLS
-                ) {
-                    day4.answers.part2++;
-                    newBuf[y][x] = EMPTY;
-                    removedCount++;
-                }
+        grid.forEach((value, vec) => {
+            if (value === EMPTY) return;
+            if (canRemovePaperRoll(grid, vec)) {
+                day4.answers.part2++;
+                newGrid.set(vec, EMPTY);
+                removedCount++;
             }
-        }
+        });
         if (removedCount <= 0) break;
-        buf = newBuf;
+        grid = newGrid.copy();
     }
 });
+
+function canRemovePaperRoll(
+    grid,
+    vec,
+    maxAdjacentRolls = MAX_ADJACENT_PAPERROLLS
+) {
+    return adjacentPaperRollCount(grid, vec) < maxAdjacentRolls;
+}
+
+function adjacentPaperRollCount(grid, origin) {
+    let adjacentPaperRolls = 0;
+    grid.forEachDirection(origin, (val) => {
+        if (val === PAPERROLL) adjacentPaperRolls++;
+    });
+    return adjacentPaperRolls;
+}
 
 await day4.examples();
 await day4.run();
