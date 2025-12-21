@@ -93,7 +93,10 @@ export default function (part1Cfg, part2Cfg, ...examples) {
                 if (once) {
                     await once(input);
                 } else {
-                    await Promise.all([part1(input), part2(input)]);
+                    const promises = [];
+                    if (isTarget(part, 1)) promises.push(part1(input));
+                    if (isTarget(part, 2)) promises.push(part2(input));
+                    await Promise.all(promises);
                 }
 
                 if (isTarget(part, 1)) {
