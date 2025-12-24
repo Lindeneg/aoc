@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+go_years=(2015 2024)
+js_years=(2025)
+
 function set_go_template () {
     filename="main.go"
     cmd=(go run)

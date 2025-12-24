@@ -12,8 +12,28 @@ ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 source "$SCRIPT_DIR/templates"
 
+in_array() {
+    local target="$1"
+    shift
+    local arr=("$@")
+
+    for item in "${arr[@]}"; do
+        [[ "$item" == "$target" ]] && return 0
+    done
+    return 1
+}
+
 year="$1"
 shift
+
+if in_array "$year" "${js_years[@]}"; then
+    set_js_template
+elif in_array "$year" "${go_years[@]}"; then
+    set_go_template
+else
+    echo "No implementation for year $year" >&2
+    exit 1
+fi
 
 if [ "$1" == "all" ]; then
     for i in {1..25}; do
@@ -36,12 +56,6 @@ fi
 day="$1"
 cday="$day"
 shift
-
-if [ "$year" == 2025 ]; then
-    set_js_template
-else
-    set_go_template
-fi
 
 if [ "$day" -lt 10 ]; then
     day="0$day"
