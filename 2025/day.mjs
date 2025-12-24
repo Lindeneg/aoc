@@ -1,4 +1,7 @@
 import fs from "fs/promises";
+import pathMod from "path";
+
+const ROOT_PATH = process.argv[2];
 
 class TestFail extends Error {
     constructor(p, c, g, e) {
@@ -21,7 +24,7 @@ export default function (part1Cfg, part2Cfg, ...examples) {
     };
 
     async function readInput(path) {
-        const buf = await fs.readFile(path);
+        const buf = await fs.readFile(pathMod.join(ROOT_PATH, path));
         return transform(buf, split);
     }
 
