@@ -1,5 +1,7 @@
 import day from "../day.mjs";
 
+const DIAL_LIMIT = 99;
+
 const day1 = day(
     {
         path: "./input",
@@ -16,7 +18,8 @@ const day1 = day(
     }
 );
 
-function makeDial(buf, dial = 50, limit = 100) {
+day1.setOnce((buf) => {
+    let dial = 50;
     for (let i = 0; i < buf.length; i++) {
         const row = buf[i];
         const isLeft = row[0] === "L";
@@ -27,11 +30,11 @@ function makeDial(buf, dial = 50, limit = 100) {
                 dial--;
                 if (dial < 0) {
                     day1.answers.part2++;
-                    dial = limit - 1;
+                    dial = DIAL_LIMIT;
                 }
             } else {
                 dial++;
-                if (dial >= limit) {
+                if (dial > DIAL_LIMIT) {
                     day1.answers.part2++;
                     dial = 0;
                 }
@@ -40,9 +43,7 @@ function makeDial(buf, dial = 50, limit = 100) {
 
         if (dial === 0) day1.answers.part1++;
     }
-}
-
-day1.setOnce(makeDial);
+});
 
 await day1.examples();
 await day1.run();

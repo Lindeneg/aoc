@@ -1,4 +1,5 @@
 import day from "../day.mjs";
+import Grid2 from "../grid2.mjs";
 
 const day6 = day(
     {
@@ -24,6 +25,67 @@ const operations = {
         return a * b;
     },
 };
+
+day6.setTransform((arrBuf, split) => {
+    const transformed = arrBuf.toString().trimEnd().split(split);
+    return [
+        new Grid2(
+            transformed
+                .map((e) => e.split(" "))
+                .map((e) => e.filter((ee) => !!ee))
+        ),
+        new Grid2(transformed.map((e) => e.split(""))),
+    ];
+});
+
+day6.setPart1(([grid]) => {
+    for (let col = 0; col < grid.cols; col++) {
+        const calculation = makeCalculation();
+        for (let row = 0; row < grid.rows; row++) {
+            const value = grid.getEx(col, row);
+            const op = operations[value];
+            if (op) {
+                calculation.operation = op;
+            } else {
+                calculation.operands.push(Number(value));
+            }
+        }
+        day6.answers.part1 += evaluateCalculation(calculation);
+    }
+});
+
+day6.setPart2(([, grid]) => {
+    let currentCalculation = makeCalculation();
+    let currentNumberStr = "";
+    for (let offset = 1; offset < grid.cols + 1; offset++) {
+        let emptyRows = 0;
+        for (let row = 0; row < grid.rows; row++) {
+            let value = grid.getEx(grid.cols - offset, row);
+            if (!value) continue;
+            const op = operations[value];
+            value = value.trim();
+            if (!value) {
+                emptyRows++;
+            } else if (op) {
+                currentCalculation.operation = op;
+            } else {
+                currentNumberStr += value;
+            }
+        }
+        if (emptyRows === grid.rows) {
+            day6.answers.part2 += evaluateCalculation(currentCalculation);
+            currentCalculation = makeCalculation();
+        }
+
+        pushOperandString(currentCalculation, currentNumberStr);
+        currentNumberStr = "";
+    }
+
+    day6.answers.part2 += evaluateCalculationEx(
+        currentCalculation,
+        currentNumberStr
+    );
+});
 
 function makeCalculation(operation = null, operands = []) {
     return {operation, operands};
@@ -52,71 +114,6 @@ function evaluateCalculation(calculation) {
 function evaluateCalculationEx(calculation, operandStr) {
     return evaluateCalculation(pushOperandString(calculation, operandStr));
 }
-
-day6.setTransform((arrBuf, split) => {
-    const transformed = arrBuf.toString().trimEnd().split(split);
-    const part1 = transformed
-        .map((e) => e.split(" "))
-        .map((e) => e.filter((ee) => !!ee));
-    const part2 = transformed.map((e) => e.split(""));
-    return [
-        part1,
-        part1.length,
-        part1[0].length,
-        part2,
-        part2.length,
-        part2[0].length,
-    ];
-});
-
-day6.setPart1(([buf, rows, cols]) => {
-    for (let col = 0; col < cols; col++) {
-        const calculation = makeCalculation();
-        for (let row = 0; row < rows; row++) {
-            const value = buf[row][col];
-            const op = operations[value];
-            if (op) {
-                calculation.operation = op;
-            } else {
-                calculation.operands.push(Number(value));
-            }
-        }
-        day6.answers.part1 += evaluateCalculation(calculation);
-    }
-});
-
-day6.setPart2(([, , , buf, rows, cols]) => {
-    let currentCalculation = makeCalculation();
-    let currentNumberStr = "";
-    for (let offset = 1; offset < cols + 1; offset++) {
-        let emptyRows = 0;
-        for (let row = 0; row < rows; row++) {
-            let value = buf[row][cols - offset];
-            if (!value) continue;
-            const op = operations[value];
-            value = value.trim();
-            if (!value) {
-                emptyRows++;
-            } else if (op) {
-                currentCalculation.operation = op;
-            } else {
-                currentNumberStr += value;
-            }
-        }
-        if (emptyRows === rows) {
-            day6.answers.part2 += evaluateCalculation(currentCalculation);
-            currentCalculation = makeCalculation();
-        }
-
-        pushOperandString(currentCalculation, currentNumberStr);
-        currentNumberStr = "";
-    }
-
-    day6.answers.part2 += evaluateCalculationEx(
-        currentCalculation,
-        currentNumberStr
-    );
-});
 
 await day6.examples();
 await day6.run();
