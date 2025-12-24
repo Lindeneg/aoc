@@ -58,13 +58,44 @@ class Grid2 {
     }
 
     outOfBounds(vec) {
-        if (vec.y < 0 || vec.y >= this.rows) return true;
-        if (vec.x < 0 || vec.x >= this.cols) return true;
+        return this.outOfBoundsX(vec.x) || this.outOfBoundsY(vec.y);
+    }
+
+    outOfBoundsX(x) {
+        if (x < 0 || x >= this.cols) return true;
         return false;
+    }
+
+    outOfBoundsY(y) {
+        if (y < 0 || y >= this.rows) return true;
+        return false;
+    }
+
+    search(predicate) {
+        for (let row = 0; row < this.rows; row++) {
+            for (let col = 0; col < this.cols; col++) {
+                const pos = new Vec2(col, row);
+                if (predicate(this.get(pos), pos)) {
+                    return pos;
+                }
+            }
+        }
+        return null;
     }
 
     copy() {
         return new Grid2(JSON.parse(JSON.stringify(this.data)));
+    }
+
+    print() {
+        for (let row = 0; row < this.rows; row++) {
+            let str = "";
+            for (let col = 0; col < this.cols; col++) {
+                str += this.getEx(col, row);
+            }
+            console.log(str);
+        }
+        console.log();
     }
 }
 

@@ -37,7 +37,7 @@ export default function (part1Cfg, part2Cfg, ...examples) {
     }
 
     function checkPart2Answer() {
-        if (part1Cfg.expected !== null && answers.part2 !== part2Cfg.expected) {
+        if (part2Cfg.expected !== null && answers.part2 !== part2Cfg.expected) {
             throw new TestFail(
                 part2Cfg.path,
                 2,
