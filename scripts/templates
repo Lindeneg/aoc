@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+function set_go_template () {
+    filename="main.go"
+    cmd=(go run)
+
+read -r -d '' template << EOM
+package main
+
+import "github.com/lindeneg/aoc/cl"
+
+func main() {
+	example := cl.NewInput("example.in")
+	cl.Example(
+		cl.Ex[int]{
+			Want: 42,
+			Fn:   func() int { return puzzle(example, false) },
+		},
+		//		cl.Ex[int]{
+		//			Want: 42,
+		//			Fn:   func() int { return puzzle(example, true) },
+		//		},
+	)
+	//	input := cl.NewInput("puzzle.in")
+	//	cl.Puzzle(
+	//		cl.Ex[int]{
+	//			Want: 0,
+	//			Fn:   func() int { return puzzle(input, false) },
+	//		},
+	//		cl.Ex[int]{
+	//			Want: 0,
+	//			Fn:   func() int { return puzzle(input, true) },
+	//		},
+	//	)
+}
+
+func puzzle(input cl.Input, _ bool) int {
+	return 0
+}
+EOM
+}
+
+function set_js_template () {
+    filename="index.mjs"
+    cmd=(node)
+read -r -d '' template << EOM
+import day from "../day.mjs";
+
+const day${day} = day(
+    {
+        path: "./puzzle.in",
+        expected: null,
+    },
+    {
+        path: "./puzzle.in",
+        expected: null,
+    },
+    {
+        path: "./example.in",
+        expected1: null,
+        expected2: null,
+    }
+);
+
+day${day}.setPart1((buf) => {});
+
+day${day}.setPart2((buf) => {});
+
+await day${day}.examples();
+await day${day}.run();
+EOM
+}

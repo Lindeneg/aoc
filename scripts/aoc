@@ -7,40 +7,7 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-read -r -d '' gomain << EOM
-package main
-
-import "github.com/lindeneg/aoc/cl"
-
-func main() {
-	example := cl.NewInput("example.in")
-	cl.Example(
-		cl.Ex[int]{
-			Want: 42,
-			Fn:   func() int { return puzzle(example, false) },
-		},
-		//		cl.Ex[int]{
-		//			Want: 42,
-		//			Fn:   func() int { return puzzle(example, true) },
-		//		},
-	)
-	//	input := cl.NewInput("puzzle.in")
-	//	cl.Puzzle(
-	//		cl.Ex[int]{
-	//			Want: 0,
-	//			Fn:   func() int { return puzzle(input, false) },
-	//		},
-	//		cl.Ex[int]{
-	//			Want: 0,
-	//			Fn:   func() int { return puzzle(input, true) },
-	//		},
-	//	)
-}
-
-func puzzle(input cl.Input, _ bool) int {
-	return 0
-}
-EOM
+source ./scripts/templates
 
 year="$1"
 shift
@@ -66,6 +33,12 @@ fi
 day="$1"
 cday="$day"
 shift
+
+if [ "$year" == 2025 ]; then
+    set_js_template
+else
+    set_go_template
+fi
 
 if [ "$day" -lt 10 ]; then
     day="0$day"
@@ -104,15 +77,16 @@ if [ "$command" == "start" ]; then
     http_status=$(curl -w "%{http_code}" -o "$out" -s -X GET -H "$cookieHeader" "$url")
     if [[ "$http_status" != 2* ]]; then
       echo "error: failed to fetch puzzle input from $url ($http_status)"
-      rm -rf "$rootDir"
+      rm -rf "$outDir"
       exit 1
     fi
 
     touch "$outDir/example.in"
-    echo -e "$gomain" > "$outDir/main.go"
+
+    echo -e "$template" > "$outDir/$filename"
 
 elif [ "$command" == "run" ]; then
-    go run "$PWD/$year/$day/main.go" "$PWD/$year/$day"
+    "${cmd[@]}" "$PWD/$year/$day/$filename" "$PWD/$year/$day"
 else
     echo "$usage"
     exit 1
