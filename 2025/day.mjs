@@ -1,130 +1,74 @@
+import {performance} from "node:perf_hooks";
 import fs from "fs/promises";
 import pathMod from "path";
+
+const FILE_CACHE = new Map();
 
 const ROOT_PATH = process.argv[2];
 
 class TestFail extends Error {
     constructor(p, c, g, e) {
-        super(`TEST FAIL: '${p}' part ${c} got: ${g} not ${e}`);
+        super(`TEST FAIL: '${p}' part ${c} got: ${g} want: ${e}`);
     }
 }
 
-export default function (part1Cfg, part2Cfg, ...examples) {
-    const answers = {part1: 0, part2: 0};
+function makePart(part) {
+    return {one: part === 1, two: part === 2};
+}
 
-    let split = "\r\n";
-    let once = null;
-
-    let part1 = async function () {};
-
-    let part2 = async function () {};
+export default function (fn, puzzles, ...examples) {
+    // TODO detect os and set accordingly
+    const split = "\r\n";
 
     let transform = function (s) {
         return s.toString().trimEnd().split(split);
     };
 
     async function readInput(path) {
-        const buf = await fs.readFile(pathMod.join(ROOT_PATH, path));
-        return transform(buf, split);
-    }
-
-    function checkPart1Answer() {
-        if (part1Cfg.expected !== null && answers.part1 !== part1Cfg.expected) {
-            throw new TestFail(
-                part1Cfg.path,
-                1,
-                answers.part1,
-                part1Cfg.expected
-            );
-        }
-    }
-
-    function checkPart2Answer() {
-        if (part2Cfg.expected !== null && answers.part2 !== part2Cfg.expected) {
-            throw new TestFail(
-                part2Cfg.path,
-                2,
-                answers.part2,
-                part2Cfg.expected
-            );
-        }
-    }
-
-    function checkExampleAnswer(path, part, got, expected) {
-        if (expected !== null && got !== expected) {
-            throw new TestFail(path, part, got, expected);
-        }
+        const absPath = pathMod.join(ROOT_PATH, path);
+        if (FILE_CACHE.has(absPath)) return FILE_CACHE.get(absPath);
+        const buf = await fs.readFile(absPath);
+        const transformed = transform(buf, split);
+        FILE_CACHE.set(absPath, transformed);
+        return transformed;
     }
 
     function isTarget(part, n) {
         return part === 0 || part === n;
     }
 
-    return {
-        answers,
+    async function evaluate(config, part, isExample) {
+        // TODO time the function and print the result and the timing
+        const input = await readInput(config.path);
 
-        async run(part = null) {
-            answers.part1 = 0;
-            answers.part2 = 0;
-            if (once) {
-                await once(await readInput(part1Cfg.path));
-                if (isTarget(1)) checkPart1Answer();
-                if (isTarget(2)) checkPart2Answer();
-            } else if (part === 1) {
-                await part1(await readInput(part1Cfg.path));
-                checkPart1Answer();
-            } else if (part === 2) {
-                await part2(await readInput(part2Cfg.path));
-                checkPart2Answer();
-            } else {
-                const [inp1, inp2] = await Promise.all([
-                    readInput(part1Cfg.path),
-                    readInput(part2Cfg.path),
-                ]);
-                await Promise.all([part1(inp1), part2(inp2)]);
-                checkPart1Answer();
-                checkPart2Answer();
-            }
-            console.log(answers);
+        const start = performance.now();
+        const got = await fn(input, makePart(part));
+        const timing = (performance.now() - start).toFixed(3) + "ms";
+        if (got !== config.want) {
+            throw new TestFail(config.path, part, got, config.want);
+        }
+        const txt = isExample ? "EXAMPLE" : "PUZZLE ";
+        console.log(`(${timing}) ${txt} ${part}: ${got}`);
+    }
+
+    async function evaluateParts([part1, part2], part, isExample = false) {
+        if (isTarget(part, 1)) {
+            await evaluate(part1, 1, isExample);
+        }
+        if (isTarget(part, 2)) {
+            await evaluate(part2, 2, isExample);
+        }
+    }
+
+    return {
+        async run(part = 0) {
+            await evaluateParts(puzzles, part);
         },
 
         async examples(part = 0) {
-            answers.part1 = 0;
-            answers.part2 = 0;
-            for (const {path, expected1, expected2} of examples) {
-                const input = await readInput(path);
-                if (once) {
-                    await once(input);
-                } else {
-                    const promises = [];
-                    if (isTarget(part, 1)) promises.push(part1(input));
-                    if (isTarget(part, 2)) promises.push(part2(input));
-                    await Promise.all(promises);
-                }
-
-                if (isTarget(part, 1)) {
-                    checkExampleAnswer(path, 1, answers.part1, expected1);
-                }
-                if (isTarget(part, 2)) {
-                    checkExampleAnswer(path, 2, answers.part2, expected2);
-                }
+            for (const example of examples) {
+                await evaluateParts(example, part, true);
             }
-        },
-
-        setOnce(fn) {
-            once = fn;
-        },
-
-        setPart1(fn) {
-            part1 = fn;
-        },
-
-        setPart2(fn) {
-            part2 = fn;
-        },
-
-        setSplit(s) {
-            split = s;
         },
 
         setTransform(fn) {
