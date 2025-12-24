@@ -7,7 +7,10 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-source ./scripts/templates
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
+source "$SCRIPT_DIR/templates"
 
 year="$1"
 shift
@@ -20,7 +23,7 @@ if [ "$1" == "all" ]; then
         else
             f="$i"
         fi
-        if [ ! -d "$PWD/$year/$f" ]; then
+        if [ ! -d "$ROOT_DIR/$year/$f" ]; then
             continue
         fi
         echo "Day $i:"
@@ -53,14 +56,14 @@ command="$1"
 shift
 
 if [ "$command" == "start" ]; then
-    rootDir="$PWD/$year"
+    rootDir="$ROOT_DIR/$year"
     outDir="$rootDir/$day"
     if [ -d "$outDir" ]; then
         echo "error: $year $day already exists"
         exit 1
     fi
 
-    source "$PWD/.env"
+    source "$ROOT_DIR/.env"
 
     if [ -z "$AOC_SESSION" ]; then
       echo "error: please set AOC_SESSION in .env file"
@@ -86,7 +89,7 @@ if [ "$command" == "start" ]; then
     echo -e "$template" > "$outDir/$filename"
 
 elif [ "$command" == "run" ]; then
-    "${cmd[@]}" "$PWD/$year/$day/$filename" "$PWD/$year/$day"
+    "${cmd[@]}" "$ROOT_DIR/$year/$day/$filename" "$ROOT_DIR/$year/$day"
 else
     echo "$usage"
     exit 1
