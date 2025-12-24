@@ -11,12 +11,12 @@ const day7 = day(
     },
     {
         path: "./input",
-        expected: 40941112789504,
+        expected: 40941112789504n,
     },
     {
         path: "./example-input",
         expected1: 21,
-        expected2: 40,
+        expected2: 40n,
     }
 );
 
@@ -41,7 +41,7 @@ function incMapEl(map, key, count) {
 }
 
 day7.setOnce(([grid, startPos]) => {
-    let current = new Map([[startPos.x, 1]]);
+    let current = new Map([[startPos.x, 1n]]);
     for (let y = startPos.y + 1; y < grid.rows; y++) {
         const next = new Map();
         for (const [x, count] of current.entries()) {
@@ -57,7 +57,7 @@ day7.setOnce(([grid, startPos]) => {
         }
         current = next;
     }
-    day7.answers.part2 = [...current.values()].reduce((a, b) => a + b, 0);
+    day7.answers.part2 = [...current.values()].reduce((a, b) => a + b, 0n);
 });
 
 await day7.examples();
