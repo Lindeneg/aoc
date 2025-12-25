@@ -2,31 +2,27 @@ import day from "../day.mjs";
 
 const day5 = day(solve, [770, 357674099117260], [3, 14]);
 
-day5.setTransform((arrBuf, split) => {
-    return arrBuf
-        .toString()
-        .trimEnd()
-        .split(split)
-        .reduce(
-            (acc, cur) => {
-                if (!cur) return acc;
-                if (cur.includes("-")) {
-                    const [from, to] = cur.split("-").map((e) => Number(e));
-                    acc.ranges.push({
-                        from,
-                        to,
-                    });
-                    if (from < acc.minFreshId) acc.minFreshId = from;
-                    if (to > acc.maxFreshId) acc.maxFreshId = to;
-                } else {
-                    const number = parseInt(cur);
-                    if (Number.isNaN(number)) return acc;
-                    acc.ids.push(number);
-                }
-                return acc;
-            },
-            {ranges: [], ids: [], minFreshId: Infinity, maxFreshId: 0}
-        );
+day5.setPostTransform((transformed) => {
+    return transformed.reduce(
+        (acc, cur) => {
+            if (!cur) return acc;
+            if (cur.includes("-")) {
+                const [from, to] = cur.split("-").map((e) => Number(e));
+                acc.ranges.push({
+                    from,
+                    to,
+                });
+                if (from < acc.minFreshId) acc.minFreshId = from;
+                if (to > acc.maxFreshId) acc.maxFreshId = to;
+            } else {
+                const number = parseInt(cur);
+                if (Number.isNaN(number)) return acc;
+                acc.ids.push(number);
+            }
+            return acc;
+        },
+        {ranges: [], ids: [], minFreshId: Infinity, maxFreshId: 0}
+    );
 });
 
 function solve(buf, part) {

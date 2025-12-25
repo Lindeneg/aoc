@@ -12,8 +12,7 @@ const OPERATIONS = {
 
 const day6 = day(solve, [4449991244405, 9348430857627], [4277556, 3263827]);
 
-day6.setTransform((arrBuf, split) => {
-    const transformed = arrBuf.toString().trimEnd().split(split);
+day6.setPostTransform((transformed) => {
     return [
         new Grid2(
             transformed

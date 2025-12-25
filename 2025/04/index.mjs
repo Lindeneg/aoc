@@ -7,15 +7,8 @@ const MAX_ADJACENT_PAPERROLLS = 4;
 
 const day4 = day(solve, [1480, 8899], [13, 43]);
 
-day4.setTransform((arrBuf, split) => {
-    const grid = new Grid2(
-        arrBuf
-            .toString()
-            .trimEnd()
-            .split(split)
-            .map((e) => e.split(""))
-    );
-    return grid;
+day4.setPostTransform((transformed) => {
+    return new Grid2(transformed.map((e) => e.split("")));
 });
 
 function solve(grid, part) {

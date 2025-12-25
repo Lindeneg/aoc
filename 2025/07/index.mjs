@@ -6,14 +6,10 @@ const SPLITTER = "^";
 
 const day7 = day(solve, [1662, 40941112789504n], [21, 40n]);
 
-day7.setTransform((arrBuf, split) => {
-    const buf = arrBuf
-        .toString()
-        .trimEnd()
-        .split(split)
-        .map((e) => e.split(""));
+day7.setPostTransform((transformed) => {
+    const buf = transformed.map((e) => e.split(""));
     const grid = new Grid2(buf);
-    const startPos = grid.find((cur) => cur === START);
+    const startPos = grid.findOne((cur) => cur === START);
     return [grid, startPos];
 });
 
