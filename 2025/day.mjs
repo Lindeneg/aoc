@@ -31,18 +31,22 @@ function makePart(part) {
 }
 
 export default function (fn, puzzles, ...examples) {
-    // TODO detect os and set accordingly
-    let split = "\r\n";
+    let split = /\r?\n/;
 
     let transform = function (s) {
         return s.toString().trimEnd().split(split);
     };
 
+    let postTransform = null;
+
     async function readInput(path) {
         const absPath = pathMod.join(ROOT_PATH, path);
         if (FILE_CACHE.has(absPath)) return FILE_CACHE.get(absPath);
         const buf = await fs.readFile(absPath);
-        const transformed = transform(buf, split);
+        let transformed = transform(buf, split);
+        if (typeof postTransform === "function") {
+            transformed = postTransform(transformed);
+        }
         FILE_CACHE.set(absPath, transformed);
         return transformed;
     }
@@ -100,6 +104,10 @@ export default function (fn, puzzles, ...examples) {
 
         setTransform(fn) {
             transform = fn;
+        },
+
+        setPostTransform(fn) {
+            postTransform = fn;
         },
 
         setSplit(s) {
