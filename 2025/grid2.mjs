@@ -71,13 +71,13 @@ class Grid2 {
         return false;
     }
 
-    find(predicate) {
-        const result = this.findAll(predicate, 1);
+    findOne(predicate) {
+        const result = this.findMany(predicate, 1);
         if (!result.length) return null;
         return result[0];
     }
 
-    findAll(predicate, limit = this.entryCount) {
+    findMany(predicate, limit = this.entryCount) {
         const vecs = [];
         for (let row = 0; row < this.rows; row++) {
             for (let col = 0; col < this.cols; col++) {
