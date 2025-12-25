@@ -12,26 +12,18 @@ const ROOT_PATH = process.argv[2];
 
 const DEFAULT_PATH = ["puzzle.in", "example.in"];
 
+function hasKey(obj, key) {
+    return obj !== null && typeof obj === "object" && key in obj;
+}
+
 function getPath(config, isExample) {
-    if (
-        config === null ||
-        typeof config === "number" ||
-        typeof config === "bigint"
-    ) {
-        return DEFAULT_PATH[Number(isExample)];
-    }
-    return config.path;
+    if (hasKey(config, "path")) return config.path;
+    return DEFAULT_PATH[Number(isExample)];
 }
 
 function getWant(config) {
-    if (
-        config === null ||
-        typeof config === "number" ||
-        typeof config === "bigint"
-    ) {
-        return config;
-    }
-    return config.want;
+    if (hasKey(config, "want")) return config.want;
+    return config;
 }
 
 function makePart(part) {
