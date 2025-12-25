@@ -1,28 +1,6 @@
 import day from "../day.mjs";
 
-const day1 = day(
-    solve,
-    [
-        {
-            path: "puzzle.in",
-            want: 999,
-        },
-        {
-            path: "puzzle.in",
-            want: 6099,
-        },
-    ],
-    [
-        {
-            path: "example.in",
-            want: 3,
-        },
-        {
-            path: "example.in",
-            want: 6,
-        },
-    ]
-);
+const day1 = day(solve, [999, 6099], [3, 6]);
 
 const DIAL_LIMIT = 99;
 const LEFT = "L";

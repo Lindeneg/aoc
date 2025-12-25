@@ -1,36 +1,26 @@
 import day from "../day.mjs";
 
-const day2 = day(
-    {
-        path: "./input",
-        expected: 12586854255,
-    },
-    {
-        path: "./input",
-        expected: 17298174201,
-    },
-    {
-        path: "./example-input",
-        expected1: 1227775554,
-        expected2: 4174379265,
-    }
-);
+// TODO: really slow mate, how about using your brain maybe?
+
+const day2 = day(solve, [12586854255, 17298174201], [1227775554, 4174379265]);
 
 day2.setSplit(",");
 
-day2.setOnce((buf) => {
+function solve(buf, part) {
+    let answer = 0;
     for (let i = 0; i < buf.length; i++) {
         const [start, end] = buf[i].split("-").map((e) => Number(e));
         for (let j = start; j <= end; j++) {
             const t = String(j).split("");
             if (t[0] === "0") continue;
-            if (isInvalidIdPart1(t)) day2.answers.part1 += j;
-            if (isInvalidIdPart2(t)) day2.answers.part2 += j;
+            if (part.one && hasReapeatingTwice(t)) answer += j;
+            if (part.two && hasReapeatingGteTwice(t)) answer += j;
         }
     }
-});
+    return answer;
+}
 
-function isInvalidIdPart1(t) {
+function hasReapeatingTwice(t) {
     const half = Math.floor(t.length / 2);
     const [firstPart, lastPart] = [
         t.slice(0, half).reduce((acc, cur) => {
@@ -43,7 +33,7 @@ function isInvalidIdPart1(t) {
     return firstPart === lastPart;
 }
 
-function isInvalidIdPart2(t) {
+function hasReapeatingGteTwice(t) {
     for (let len = 1; len <= t.length / 2; len++) {
         if (t.length % len !== 0) continue;
 

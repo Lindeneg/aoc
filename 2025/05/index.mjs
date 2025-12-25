@@ -1,20 +1,6 @@
 import day from "../day.mjs";
 
-const day5 = day(
-    {
-        path: "./input",
-        expected: 770,
-    },
-    {
-        path: "./input",
-        expected: 357674099117260,
-    },
-    {
-        path: "./example-input",
-        expected1: 3,
-        expected2: 14,
-    }
-);
+const day5 = day(solve, [770, 357674099117260], [3, 14]);
 
 day5.setTransform((arrBuf, split) => {
     return arrBuf
@@ -43,23 +29,32 @@ day5.setTransform((arrBuf, split) => {
         );
 });
 
-day5.setPart1(({ranges, ids, minFreshId, maxFreshId}) => {
+function solve(buf, part) {
+    if (part.one) return freshIdCount(buf);
+    if (part.two) return freshIdsFromRangeCount(buf);
+    return 0;
+}
+
+function freshIdCount({ranges, ids, minFreshId, maxFreshId}) {
+    let answer = 0;
     for (let i = 0; i < ids.length; i++) {
         const id = ids[i];
         if (id > maxFreshId || id < minFreshId) continue;
         for (let j = 0; j < ranges.length; j++) {
             const range = ranges[j];
             if (id >= range.from && id <= range.to) {
-                day5.answers.part1++;
+                answer++;
                 break;
             }
         }
     }
-});
+    return answer;
+}
 
-day5.setPart2((buf) => {
+function freshIdsFromRangeCount(buf) {
     const ranges = [...buf.ranges].sort((a, b) => a.from - b.from);
 
+    let answer = 0;
     let currentFrom = ranges[0].from;
     let currentTo = ranges[0].to;
     for (let i = 1; i < ranges.length; i++) {
@@ -68,14 +63,14 @@ day5.setPart2((buf) => {
         if (range.from <= currentTo + 1) {
             currentTo = Math.max(currentTo, range.to);
         } else {
-            day5.answers.part2 += currentTo - currentFrom + 1;
+            answer += currentTo - currentFrom + 1;
             currentFrom = range.from;
             currentTo = range.to;
         }
     }
-
-    day5.answers.part2 += currentTo - currentFrom + 1;
-});
+    answer += currentTo - currentFrom + 1;
+    return answer;
+}
 
 await day5.examples();
 await day5.run();

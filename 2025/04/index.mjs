@@ -5,21 +5,7 @@ const PAPERROLL = "@";
 const EMPTY = ".";
 const MAX_ADJACENT_PAPERROLLS = 4;
 
-const day4 = day(
-    {
-        path: "./input",
-        expected: 1480,
-    },
-    {
-        path: "./input",
-        expected: 8899,
-    },
-    {
-        path: "./example-input",
-        expected1: 13,
-        expected2: 43,
-    }
-);
+const day4 = day(solve, [1480, 8899], [13, 43]);
 
 day4.setTransform((arrBuf, split) => {
     const grid = new Grid2(
@@ -32,31 +18,35 @@ day4.setTransform((arrBuf, split) => {
     return grid;
 });
 
-day4.setPart1((grid) => {
-    grid.forEach((value, vec) => {
-        if (value === EMPTY) return;
-        if (canRemovePaperRoll(grid, vec)) {
-            day4.answers.part1++;
-        }
-    });
-});
+function solve(grid, part) {
+    let answer = 0;
 
-day4.setPart2((grid) => {
-    let newGrid = grid.copy();
-    while (true) {
-        let removedCount = 0;
+    if (part.one) {
         grid.forEach((value, vec) => {
             if (value === EMPTY) return;
             if (canRemovePaperRoll(grid, vec)) {
-                day4.answers.part2++;
-                newGrid.set(vec, EMPTY);
-                removedCount++;
+                answer++;
             }
         });
-        if (removedCount <= 0) break;
-        grid = newGrid.copy();
+    } else if (part.two) {
+        let newGrid = grid.copy();
+        while (true) {
+            let removedCount = 0;
+            grid.forEach((value, vec) => {
+                if (value === EMPTY) return;
+                if (canRemovePaperRoll(grid, vec)) {
+                    answer++;
+                    newGrid.set(vec, EMPTY);
+                    removedCount++;
+                }
+            });
+            if (removedCount <= 0) break;
+            grid = newGrid.copy();
+        }
     }
-});
+
+    return answer;
+}
 
 function canRemovePaperRoll(
     grid,

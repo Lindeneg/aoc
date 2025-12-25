@@ -26,15 +26,6 @@ in_array() {
 year="$1"
 shift
 
-if in_array "$year" "${js_years[@]}"; then
-    set_js_template
-elif in_array "$year" "${go_years[@]}"; then
-    set_go_template
-else
-    echo "No implementation for year $year" >&2
-    exit 1
-fi
-
 if [ "$1" == "all" ]; then
     for i in {1..25}; do
         f="day"
@@ -56,6 +47,15 @@ fi
 day="$1"
 cday="$day"
 shift
+
+if in_array "$year" "${js_years[@]}"; then
+    set_js_template
+elif in_array "$year" "${go_years[@]}"; then
+    set_go_template
+else
+    echo "No implementation for year $year" >&2
+    exit 1
+fi
 
 if [ "$day" -lt 10 ]; then
     day="0$day"

@@ -2,24 +2,16 @@ import day from "../day.mjs";
 
 // TODO PART 2!!!! USE YOUR FUCKING BRAIN YOU DONKEY
 
-const day3 = day(
-    {
-        path: "./input",
-        expected: 17263,
-    },
-    {
-        path: "./input",
-        expected: null,
-    },
-    {
-        path: "./example-input",
-        expected1: 357,
-        expected2: 3121910778619,
-    }
-);
+const day3 = day(solve, [17263, null], [357, null /*3121910778619*/]);
 
-// given a string of numbers, find N amount of consecutive digits
-// that will create the larget number
+function solve(buf, part) {
+    let answer = 0;
+    for (const line of buf) {
+        if (part.one) answer += makeLargestDigit(line, 2);
+        //if (part.to) answer += makeLargestDigit(line, 12);
+    }
+    return answer;
+}
 
 function findLargestDigit(s, start, end) {
     const match = {value: 0, index: -1};
@@ -42,16 +34,8 @@ function makeLargestDigit(s, numOfDigits) {
         result += largest.value.toString();
         start = largest.index + 1;
     }
-    console.log({s, result, numOfDigits, size});
     return Number(result);
 }
 
-day3.setOnce((buf) => {
-    for (const line of buf) {
-        //        day3.answers.part1 += makeLargestDigit(line, 2);
-        day3.answers.part2 += makeLargestDigit(line, 12);
-    }
-});
-
-await day3.examples(2);
-//await day3.run();
+await day3.examples();
+await day3.run();

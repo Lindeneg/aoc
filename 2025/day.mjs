@@ -2,14 +2,36 @@ import {performance} from "node:perf_hooks";
 import fs from "fs/promises";
 import pathMod from "path";
 
+const GREEN = "\x1b[32m";
+const RED = "\x1b[31m";
+const RESET = "\x1b[0m";
+
 const FILE_CACHE = new Map();
 
 const ROOT_PATH = process.argv[2];
 
-class TestFail extends Error {
-    constructor(p, c, g, e) {
-        super(`TEST FAIL: '${p}' part ${c} got: ${g} want: ${e}`);
+const DEFAULT_PATH = ["puzzle.in", "example.in"];
+
+function getPath(config, isExample) {
+    if (
+        config === null ||
+        typeof config === "number" ||
+        typeof config === "bigint"
+    ) {
+        return DEFAULT_PATH[Number(isExample)];
     }
+    return config.path;
+}
+
+function getWant(config) {
+    if (
+        config === null ||
+        typeof config === "number" ||
+        typeof config === "bigint"
+    ) {
+        return config;
+    }
+    return config.want;
 }
 
 function makePart(part) {
@@ -18,7 +40,7 @@ function makePart(part) {
 
 export default function (fn, puzzles, ...examples) {
     // TODO detect os and set accordingly
-    const split = "\r\n";
+    let split = "\r\n";
 
     let transform = function (s) {
         return s.toString().trimEnd().split(split);
@@ -37,42 +59,59 @@ export default function (fn, puzzles, ...examples) {
         return part === 0 || part === n;
     }
 
-    async function evaluate(config, part, isExample) {
-        // TODO time the function and print the result and the timing
-        const input = await readInput(config.path);
-
+    async function evaluate(config, part, isExample, silent = false) {
+        const p = getPath(config, isExample);
+        const want = getWant(config);
+        const input = await readInput(p);
         const start = performance.now();
         const got = await fn(input, makePart(part));
         const timing = (performance.now() - start).toFixed(3) + "ms";
-        if (got !== config.want) {
-            throw new TestFail(config.path, part, got, config.want);
-        }
+
+        if (silent) return;
+
         const txt = isExample ? "EXAMPLE" : "PUZZLE ";
-        console.log(`(${timing}) ${txt} ${part}: ${got}`);
+        if (got !== want) {
+            console.log(
+                `${RED}FAIL${RESET} ${txt} ${part}: got=${got} want=${want}`
+            );
+        } else {
+            console.log(
+                `${GREEN}PASS${RESET} ${txt} ${part}: ${got} (${timing})`
+            );
+        }
     }
 
-    async function evaluateParts([part1, part2], part, isExample = false) {
+    async function evaluateParts(
+        [part1, part2],
+        part,
+        isExample = false,
+        silent = false
+    ) {
         if (isTarget(part, 1)) {
-            await evaluate(part1, 1, isExample);
+            await evaluate(part1, 1, isExample, silent);
         }
         if (isTarget(part, 2)) {
-            await evaluate(part2, 2, isExample);
+            await evaluate(part2, 2, isExample, silent);
         }
     }
 
     return {
-        async run(part = 0) {
-            await evaluateParts(puzzles, part);
+        async run(part = 0, silent = false) {
+            await evaluateParts(puzzles, part, false, silent);
         },
 
-        async examples(part = 0) {
+        async examples(part = 0, silent = false) {
             for (const example of examples) {
-                await evaluateParts(example, part, true);
+                await evaluateParts(example, part, true, silent);
             }
         },
 
         setTransform(fn) {
             transform = fn;
+        },
+
+        setSplit(s) {
+            split = s;
         },
     };
 }

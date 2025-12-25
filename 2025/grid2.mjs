@@ -17,8 +17,8 @@ class Grid2 {
     constructor(grid) {
         this.data = grid;
         this.rows = grid.length;
-        // ehhh not safe
         this.cols = grid[0].length;
+        this.entryCount = this.rows * this.cols;
     }
 
     getEx(col, row) {
@@ -71,16 +71,24 @@ class Grid2 {
         return false;
     }
 
-    search(predicate) {
+    find(predicate) {
+        const result = this.findAll(predicate, 1);
+        if (!result.length) return null;
+        return result[0];
+    }
+
+    findAll(predicate, limit = this.entryCount) {
+        const vecs = [];
         for (let row = 0; row < this.rows; row++) {
             for (let col = 0; col < this.cols; col++) {
                 const pos = new Vec2(col, row);
                 if (predicate(this.get(pos), pos)) {
-                    return pos;
+                    vecs.push(pos);
+                    if (vecs.length >= limit) return vecs;
                 }
             }
         }
-        return null;
+        return vecs;
     }
 
     copy() {
