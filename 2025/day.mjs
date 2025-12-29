@@ -64,15 +64,13 @@ export default function (fn, puzzles, ...examples) {
         return part === 0 || part === n;
     }
 
-    async function evaluate(config, part, isExample, silent, ...args) {
+    async function evaluate(config, part, isExample, ...args) {
         const p = getPath(config, isExample);
         const want = getWant(config);
         const input = await readInput(p);
         const start = performance.now();
         const result = await fn(input, makePart(part), ...args);
         const timing = (performance.now() - start).toFixed(3) + "ms";
-
-        if (silent) return;
 
         let txt = isExample ? `EXAMPLE ${part}` : `PUZZLE  ${part}`;
         let got = result;
@@ -97,25 +95,24 @@ export default function (fn, puzzles, ...examples) {
         [part1, part2],
         part,
         isExample = false,
-        silent = false,
         ...args
     ) {
         if (isTarget(part, 1)) {
-            await evaluate(part1, 1, isExample, silent, ...args);
+            await evaluate(part1, 1, isExample, ...args);
         }
         if (isTarget(part, 2)) {
-            await evaluate(part2, 2, isExample, silent, ...args);
+            await evaluate(part2, 2, isExample, ...args);
         }
     }
 
     return {
-        async run(part = 0, silent = false, ...args) {
-            await evaluateParts(puzzles, part, false, silent, ...args);
+        async run(part = 0, ...args) {
+            await evaluateParts(puzzles, part, false, ...args);
         },
 
-        async examples(part = 0, silent = false, ...args) {
+        async examples(part = 0, ...args) {
             for (const example of examples) {
-                await evaluateParts(example, part, true, silent, ...args);
+                await evaluateParts(example, part, true, ...args);
             }
         },
 
