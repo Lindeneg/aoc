@@ -51,12 +51,16 @@ import day from "../day.mjs";
 
 const day${day} = day(solve, [null, null], [null, null]);
 
+day${day}.setPostTransform((transformed) => {
+    return transformed;
+});
+
 function solve(buf, part) {
     let answer = 0;
     return answer;
 }
 
-await day${day}.examples();
-await day${day}.run();
+await day${day}.examples(1, true);
+//await day${day}.run();
 EOM
 }
