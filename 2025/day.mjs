@@ -12,6 +12,15 @@ const ROOT_PATH = process.argv[2];
 
 const DEFAULT_PATH = ["puzzle.in", "example.in"];
 
+// just to make it easier to return some context
+// that can be logged in the evaluate function
+export class Result {
+    constructor(data, ctx) {
+        this.data = data;
+        this.ctx = ctx;
+    }
+}
+
 function hasKey(obj, key) {
     return obj !== null && typeof obj === "object" && key in obj;
 }
@@ -55,24 +64,31 @@ export default function (fn, puzzles, ...examples) {
         return part === 0 || part === n;
     }
 
-    async function evaluate(config, part, isExample, silent = false) {
+    async function evaluate(config, part, isExample, silent, ...args) {
         const p = getPath(config, isExample);
         const want = getWant(config);
         const input = await readInput(p);
         const start = performance.now();
-        const got = await fn(input, makePart(part));
+        const result = await fn(input, makePart(part), ...args);
         const timing = (performance.now() - start).toFixed(3) + "ms";
 
         if (silent) return;
 
-        const txt = isExample ? "EXAMPLE" : "PUZZLE ";
+        let txt = isExample ? `EXAMPLE ${part}` : `PUZZLE  ${part}`;
+        let got = result;
+        let ctx = "";
+        if (result instanceof Result) {
+            got = result.data;
+            ctx = ` (${result.ctx})`;
+        }
+
         if (got !== want) {
             console.log(
-                `${RED}FAIL${RESET} ${txt} ${part}: got=${got} want=${want}`
+                `${RED}FAIL${RESET} ${txt}: got=${got} want=${want}${ctx}`
             );
         } else {
             console.log(
-                `${GREEN}PASS${RESET} ${txt} ${part}: ${got} (${timing})`
+                `${GREEN}PASS${RESET} ${txt}: ${got} (${timing})${ctx}`
             );
         }
     }
@@ -81,24 +97,25 @@ export default function (fn, puzzles, ...examples) {
         [part1, part2],
         part,
         isExample = false,
-        silent = false
+        silent = false,
+        ...args
     ) {
         if (isTarget(part, 1)) {
-            await evaluate(part1, 1, isExample, silent);
+            await evaluate(part1, 1, isExample, silent, ...args);
         }
         if (isTarget(part, 2)) {
-            await evaluate(part2, 2, isExample, silent);
+            await evaluate(part2, 2, isExample, silent, ...args);
         }
     }
 
     return {
-        async run(part = 0, silent = false) {
-            await evaluateParts(puzzles, part, false, silent);
+        async run(part = 0, silent = false, ...args) {
+            await evaluateParts(puzzles, part, false, silent, ...args);
         },
 
-        async examples(part = 0, silent = false) {
+        async examples(part = 0, silent = false, ...args) {
             for (const example of examples) {
-                await evaluateParts(example, part, true, silent);
+                await evaluateParts(example, part, true, silent, ...args);
             }
         },
 
