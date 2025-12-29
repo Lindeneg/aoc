@@ -1,7 +1,7 @@
 class Vec2 {
     constructor(x = 0, y = 0) {
-        this.x = x;
-        this.y = y;
+        this.x = Number(x);
+        this.y = Number(y);
     }
 
     add(o) {
@@ -58,12 +58,22 @@ class Vec2 {
         return this.x * o.x + this.y * o.y;
     }
 
+    distance(o) {
+        const dx = this.x - o.x;
+        const dy = this.y - o.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
     equals(o) {
         return this.x === o.x && this.y === o.y;
     }
 
     copy() {
         return new Vec2(this.x, this.y);
+    }
+
+    toString() {
+        return `(${this.x},${this.y})`;
     }
 
     static add(a, b) {

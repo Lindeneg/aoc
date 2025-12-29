@@ -1,8 +1,11 @@
-class Vec3 {
+import Printable from "./printable.mjs";
+
+class Vec3 extends Printable {
     constructor(x = 0, y = 0, z = 0) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        super();
+        this.x = Number(x);
+        this.y = Number(y);
+        this.z = Number(z);
     }
 
     add(o) {
@@ -69,12 +72,23 @@ class Vec3 {
         return this.x * o.x + this.y * o.y + this.z * o.z;
     }
 
+    distance(o) {
+        const dx = this.x - o.x;
+        const dy = this.y - o.y;
+        const dz = this.z - o.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
     equals(o) {
         return this.x === o.x && this.y === o.y && this.z === o.z;
     }
 
     copy() {
         return new Vec3(this.x, this.y, this.z);
+    }
+
+    toString() {
+        return `(${this.x},${this.y},${this.z})`;
     }
 
     static add(a, b) {
