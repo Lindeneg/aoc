@@ -1,4 +1,4 @@
-import day from "../day.mjs";
+import day, {Result} from "../day.mjs";
 import Vec3 from "../vec3.mjs";
 import makeUfFromMode, {UF_MODE} from "../uf.mjs";
 
@@ -11,28 +11,35 @@ day8.setPostTransform((transformed) => {
     });
 });
 
-function solve(vecs, part, maxConnections, mode = UF_MODE.BIT) {
+function solve(vecs, part, maxConnections, mode) {
     const [pairs, ufData] = makeUfData(mode, vecs);
     const uf = makeUfFromMode(mode, ufData, vecs);
+
+    let answer = 0;
 
     let connections = 0;
     for (const [a, b] of pairs) {
         if (part.one && connections >= maxConnections) break;
         if (uf.merge(a, b) >= vecs.length && part.two) {
-            return vecs[a].x * vecs[b].x;
+            if (mode === UF_MODE.BIT) {
+                answer = vecs[a].x * vecs[b].x;
+            } else {
+                answer = a.x * b.x;
+            }
+            break;
         } else {
             connections++;
         }
     }
 
     if (part.one) {
-        return uf
+        answer = uf
             .sizes()
             .slice(0, 3)
             .reduce((a, b) => a * b, 1);
     }
 
-    return 0;
+    return new Result(answer, mode);
 }
 
 function makeUfData(mode, vecs) {
@@ -41,6 +48,7 @@ function makeUfData(mode, vecs) {
     const pairs = [];
     const boxes = isBitMode ? null : new Set();
 
+    // TODO: optimize this
     for (let i = 0; i < vecs.length; i++) {
         for (let j = i + 1; j < vecs.length; j++) {
             const a = vecs[i];
@@ -65,8 +73,7 @@ function makeUfData(mode, vecs) {
     return [pairs, boxes];
 }
 
-await day8.examples(1, false, 10);
-await day8.examples(2);
-
-await day8.run(1, false, 1000);
-await day8.run(2, false);
+await day8.examples(0, 10, UF_MODE.BIT);
+await day8.run(0, 1000, UF_MODE.BIT);
+//await day8.examples(0, 10, UF_MODE.OBJECT);
+//await day8.run(0, 1000, UF_MODE.OBJECT);
