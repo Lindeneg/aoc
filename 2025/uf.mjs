@@ -30,15 +30,17 @@ export class UfObjectKeyed {
 
     merge(x, y) {
         const [xRoot, yRoot] = [this.find(x), this.find(y)];
-        if (xRoot === yRoot) return;
+        if (xRoot === yRoot) return this.size.get(xRoot);
         const [xSize, ySize] = [this.size.get(xRoot), this.size.get(yRoot)];
         let [bigger, smaller] = [xRoot, yRoot];
         if (xSize < ySize) {
             [bigger, smaller] = [yRoot, xRoot];
         }
+        const newSize = xSize + ySize;
         this.parent.set(smaller, bigger);
-        this.size.set(bigger, xSize + ySize);
+        this.size.set(bigger, newSize);
         this.size.delete(smaller);
+        return newSize;
     }
 
     sizes() {
