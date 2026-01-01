@@ -1,6 +1,10 @@
-import Printable from "./printable.mjs";
+import Printable from "./printable";
 
 class Vec3 extends Printable {
+    public x: number;
+    public y: number;
+    public z: number;
+
     constructor(x = 0, y = 0, z = 0) {
         super();
         this.x = Number(x);
@@ -8,42 +12,42 @@ class Vec3 extends Printable {
         this.z = Number(z);
     }
 
-    add(o) {
+    add(o: Vec3) {
         this.x += o.x;
         this.y += o.y;
         this.z += o.z;
         return this;
     }
 
-    sub(o) {
+    sub(o: Vec3) {
         this.x -= o.x;
         this.y -= o.y;
         this.z -= o.z;
         return this;
     }
 
-    mul(o) {
+    mul(o: Vec3) {
         this.x *= o.x;
         this.y *= o.y;
         this.z *= o.z;
         return this;
     }
 
-    div(o) {
+    div(o: Vec3) {
         this.x /= o.x;
         this.y /= o.y;
         this.z /= o.z;
         return this;
     }
 
-    scale(f) {
+    scale(f: number) {
         this.x *= f;
         this.y *= f;
         this.z *= f;
         return this;
     }
 
-    shrink(f) {
+    shrink(f: number) {
         this.x /= f;
         this.y /= f;
         this.z /= f;
@@ -68,18 +72,18 @@ class Vec3 extends Printable {
         return this.x * this.x + this.y * this.y + this.z * this.z;
     }
 
-    dot(o) {
+    dot(o: Vec3) {
         return this.x * o.x + this.y * o.y + this.z * o.z;
     }
 
-    distance(o) {
+    distance(o: Vec3) {
         const dx = this.x - o.x;
         const dy = this.y - o.y;
         const dz = this.z - o.z;
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    equals(o) {
+    equals(o: Vec3) {
         return this.x === o.x && this.y === o.y && this.z === o.z;
     }
 
@@ -91,23 +95,23 @@ class Vec3 extends Printable {
         return `(${this.x},${this.y},${this.z})`;
     }
 
-    static add(a, b) {
+    static add(a: Vec3, b: Vec3) {
         return new Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
     }
 
-    static sub(a, b) {
+    static sub(a: Vec3, b: Vec3) {
         return new Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
     }
 
-    static mul(a, b) {
+    static mul(a: Vec3, b: Vec3) {
         return new Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
     }
 
-    static div(a, b) {
+    static div(a: Vec3, b: Vec3) {
         return new Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
     }
 
-    static dot(a, b) {
+    static dot(a: Vec3, b: Vec3) {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
 }

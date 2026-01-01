@@ -44,23 +44,26 @@ EOM
 }
 
 function set_js_template () {
-    filename="index.mjs"
-    cmd=(node)
+    filename="index.ts"
+    cmd=(npx -y tsx)
 read -r -d '' template << EOM
-import day from "../day.mjs";
+import Day from "../day";
 
-const day${day} = day(solve, [null, null], [null, null]);
-
-day${day}.setPostTransform((transformed) => {
+const day${day} = new Day(
+    (data: string[], part) => {
+        let answer = 0;
+        return answer;
+    },
+    [null, null],
+    [null, null]
+).setPostTransform((transformed) => {
     return transformed;
 });
 
-function solve(buf, part) {
-    let answer = 0;
-    return answer;
-}
+(async () => {
+    await day${day}.examples(1);
+    //await day${day}.solve();
+})();
 
-await day${day}.examples(1, true);
-//await day${day}.run();
 EOM
 }

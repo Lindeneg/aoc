@@ -1,40 +1,43 @@
 class Vec2 {
+    public x: number;
+    public y: number;
+
     constructor(x = 0, y = 0) {
         this.x = Number(x);
         this.y = Number(y);
     }
 
-    add(o) {
+    add(o: Vec2) {
         this.x += o.x;
         this.y += o.y;
         return this;
     }
 
-    sub(o) {
+    sub(o: Vec2) {
         this.x -= o.x;
         this.y -= o.y;
         return this;
     }
 
-    mul(o) {
+    mul(o: Vec2) {
         this.x *= o.x;
         this.y *= o.y;
         return this;
     }
 
-    div(o) {
+    div(o: Vec2) {
         this.x /= o.x;
         this.y /= o.y;
         return this;
     }
 
-    scale(f) {
+    scale(f: number) {
         this.x *= f;
         this.y *= f;
         return this;
     }
 
-    shrink(f) {
+    shrink(f: number) {
         this.x /= f;
         this.y /= f;
         return this;
@@ -54,17 +57,17 @@ class Vec2 {
         return this.x * this.x + this.y * this.y;
     }
 
-    dot(o) {
+    dot(o: Vec2) {
         return this.x * o.x + this.y * o.y;
     }
 
-    distance(o) {
+    distance(o: Vec2) {
         const dx = this.x - o.x;
         const dy = this.y - o.y;
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    equals(o) {
+    equals(o: Vec2) {
         return this.x === o.x && this.y === o.y;
     }
 
@@ -76,23 +79,23 @@ class Vec2 {
         return `(${this.x},${this.y})`;
     }
 
-    static add(a, b) {
+    static add(a: Vec2, b: Vec2) {
         return new Vec2(a.x + b.x, a.y + b.y);
     }
 
-    static sub(a, b) {
+    static sub(a: Vec2, b: Vec2) {
         return new Vec2(a.x - b.x, a.y - b.y);
     }
 
-    static mul(a, b) {
+    static mul(a: Vec2, b: Vec2) {
         return new Vec2(a.x * b.x, a.y * b.y);
     }
 
-    static div(a, b) {
+    static div(a: Vec2, b: Vec2) {
         return new Vec2(a.x / b.x, a.y / b.y);
     }
 
-    static dot(a, b) {
+    static dot(a: Vec2, b: Vec2) {
         return a.x * b.x + a.y * b.y;
     }
 }

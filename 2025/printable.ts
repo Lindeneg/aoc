@@ -1,6 +1,6 @@
 import util from "node:util";
 
-class Printable {
+abstract class Printable {
     toString() {
         return "";
     }
