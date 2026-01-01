@@ -2,15 +2,18 @@ import {performance} from "node:perf_hooks";
 import fs from "fs/promises";
 import pathMod from "path";
 
-type Part = Record<"one" | "two", boolean>;
+export type AnyFn = (...args: any) => any;
+export type Nullable<T> = T | null;
+
+type Part = Record<"one" | "two" | "isExample", boolean>;
 
 type ConfigObj<T> = {path: string; want: T};
-type Config<T> = ConfigObj<T> | T | null;
+type Config<T> = Nullable<ConfigObj<T> | T>;
 type DayConfig<T> = T extends Result
     ? [Config<T["data"]>, Config<T["data"]>]
     : [Config<T>, Config<T>];
 
-type TailAfter2<T extends (...args: any) => any> = Parameters<T> extends [
+type CtxFromParams<T extends AnyFn> = Parameters<T> extends [
     any,
     any,
     ...infer Rest,
@@ -18,22 +21,28 @@ type TailAfter2<T extends (...args: any) => any> = Parameters<T> extends [
     ? Rest
     : never;
 
-type DataFromFn<T extends (...args: any) => any> = Parameters<T>[0];
+type DataFromParams<T extends AnyFn> = Parameters<T>[1];
 
-type SolveFn<TData = any, TReturn = any, TArgs = any> = (
-    data: TData,
+type SolveFn<TData = any, TReturn = any, TArgs extends Array<any> = any> = (
     part: Part,
-    ...args: TArgs[]
+    data: TData,
+    ...args: TArgs
 ) => TReturn;
 
 type Transform = (s: Buffer, split: RegExp | string) => string[];
-type PostTransform<T> = (s: string[]) => T;
+type PostTransform<TVal, TArgs extends Array<any>> = (
+    s: string[],
+    ...args: TArgs
+) => TVal;
+
+type PostTransformFn<T extends AnyFn> = PostTransform<
+    DataFromParams<T>,
+    CtxFromParams<T>
+>;
 
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";
 const RESET = "\x1b[0m";
-
-const FILE_CACHE = new Map<string, unknown>();
 
 const ROOT_PATH = process.argv[2] as string;
 
@@ -55,7 +64,7 @@ class Day<T extends SolveFn> {
     #examples: DayConfig<ReturnType<T>>[];
     #split: RegExp | string;
     #transform: Transform;
-    #postTransform: PostTransform<DataFromFn<T>> | null;
+    #postTransform: Nullable<PostTransformFn<T>>;
 
     constructor(
         fn: T,
@@ -76,7 +85,7 @@ class Day<T extends SolveFn> {
         return this;
     }
 
-    setPostTransform(fn: PostTransform<DataFromFn<T>> | null) {
+    setPostTransform(fn: Nullable<PostTransformFn<T>>) {
         this.#postTransform = fn;
         return this;
     }
@@ -86,25 +95,23 @@ class Day<T extends SolveFn> {
         return this;
     }
 
-    async solve(part: number = 0, ...args: TailAfter2<T>) {
+    async solve(part: number = 0, ...args: CtxFromParams<T>) {
         return this.#evaluateParts(this.#puzzles, part, false, ...args);
     }
 
-    async examples(part: number = 0, ...args: TailAfter2<T>) {
+    async examples(part: number = 0, ...args: CtxFromParams<T>) {
         for (const example of this.#examples) {
             await this.#evaluateParts(example, part, true, ...args);
         }
     }
 
-    async #readInput(path: string) {
+    async #readInput(path: string, ...args: CtxFromParams<T>) {
         const absPath = pathMod.join(ROOT_PATH, path);
-        if (FILE_CACHE.has(absPath)) return FILE_CACHE.get(absPath);
         const buf = await fs.readFile(absPath);
         let transformed = this.#transform(buf, this.#split);
         if (typeof this.#postTransform === "function") {
-            transformed = this.#postTransform(transformed);
+            transformed = this.#postTransform(transformed, ...args);
         }
-        FILE_CACHE.set(absPath, transformed);
         return transformed;
     }
 
@@ -112,13 +119,17 @@ class Day<T extends SolveFn> {
         config: Config<ReturnType<T>>,
         part: number,
         isExample: boolean,
-        ...args: TailAfter2<T>
+        ...args: CtxFromParams<T>
     ) {
         const p = Day.#getPath(config, isExample);
         const want = Day.#getWant(config);
-        const input = await this.#readInput(p);
+        const input = await this.#readInput(p, ...args);
         const start = performance.now();
-        const result = await this.#fn(input, Day.#makePart(part), ...args);
+        const result = await this.#fn(
+            Day.#makePart(part, isExample),
+            input,
+            ...args
+        );
         const timing = (performance.now() - start).toFixed(3) + "ms";
 
         let txt = isExample ? `EXAMPLE ${part}` : `PUZZLE  ${part}`;
@@ -144,7 +155,7 @@ class Day<T extends SolveFn> {
         [part1, part2]: DayConfig<ReturnType<T>>,
         part: number,
         isExample: boolean = false,
-        ...args: TailAfter2<T>
+        ...args: CtxFromParams<T>
     ) {
         if (Day.#isTarget(part, 1)) {
             await this.#evaluate(part1, 1, isExample, ...args);
@@ -162,8 +173,8 @@ class Day<T extends SolveFn> {
         return part === 0 || part === n;
     }
 
-    static #makePart(part: number): Part {
-        return {one: part === 1, two: part === 2};
+    static #makePart(part: number, isExample: boolean): Part {
+        return {one: part === 1, two: part === 2, isExample};
     }
 
     static #getWant<T>(config: Config<T>) {

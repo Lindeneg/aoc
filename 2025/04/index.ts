@@ -17,7 +17,7 @@ function adjacentCount(grid: Grid, originIdx: number) {
 }
 
 const day4 = new Day(
-    (grid: Grid, part) => {
+    (part, grid: Grid) => {
         let answer = 0;
 
         if (part.one) {

@@ -120,7 +120,7 @@ abstract class Grid2<T> extends Printable {
     }
 
     forEachSliceCoords(
-        fn: (val: T, idx: number) => void,
+        fn: (val: T, idx: number) => boolean | void,
         minX: number,
         minY: number,
         maxX: number,
@@ -134,27 +134,34 @@ abstract class Grid2<T> extends Printable {
         for (let y = minY; y <= maxY; y++) {
             for (let x = minX; x <= maxX; x++) {
                 const idx = this.coordsToIdx(x, y);
-                fn(this.getFromIdx(idx), idx);
+                if (fn(this.getFromIdx(idx), idx) === true) return;
             }
         }
     }
 
-    forEachSliceVecs(fn: (val: T, idx: number) => void, min: Vec2, max: Vec2) {
+    forEachSliceVecs(
+        fn: (val: T, idx: number) => boolean | void,
+        min: Vec2,
+        max: Vec2
+    ) {
         return this.forEachSliceCoords(fn, min.x, min.y, max.x, max.y);
     }
 
     findOneInSlice(
+        predicate: (val: T, idx: number) => boolean,
         minX: number,
         minY: number,
         maxX: number,
-        maxY: number,
-        predicate: (val: T, idx: number) => boolean
+        maxY: number
     ) {
         let found: number = -1;
         this.forEachSliceCoords(
             (val, idx) => {
-                if (found) return;
-                if (predicate(val, idx)) found = idx;
+                if (predicate(val, idx)) {
+                    found = idx;
+                    // stops iteration
+                    return true;
+                }
             },
             minX,
             minY,
@@ -165,11 +172,11 @@ abstract class Grid2<T> extends Printable {
     }
 
     findManyInSlice(
+        predicate: (val: T, idx: number) => boolean,
         minX: number,
         minY: number,
         maxX: number,
         maxY: number,
-        predicate: (val: T, idx: number) => boolean,
         limit = Infinity
     ): number[] {
         const result: number[] = [];
@@ -261,6 +268,14 @@ export class DenseGrid2<T> extends Grid2<T> {
 
     forEach(fn: (val: T, idx: number) => void) {
         this.forEachSliceCoords(fn, 0, 0, this.width, this.height);
+    }
+
+    findOne(fn: (val: T, idx: number) => boolean) {
+        return this.findOneInSlice(fn, 0, 0, this.width, this.height);
+    }
+
+    findMany(fn: (val: T, idx: number) => boolean, limit?: number) {
+        return this.findManyInSlice(fn, 0, 0, this.width, this.height, limit);
     }
 
     toString() {

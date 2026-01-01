@@ -1,19 +1,8 @@
-import day from "../day.mjs";
+import Day from "../day";
 
 // TODO PART 2!!!! USE YOUR FUCKING BRAIN YOU DONKEY
 
-const day3 = day(solve, [17263, null], [357, null /*3121910778619*/]);
-
-function solve(buf, part) {
-    let answer = 0;
-    for (const line of buf) {
-        if (part.one) answer += makeLargestDigit(line, 2);
-        //if (part.to) answer += makeLargestDigit(line, 12);
-    }
-    return answer;
-}
-
-function findLargestDigit(s, start, end) {
+function findLargestDigit(s: string, start: number, end: number) {
     const match = {value: 0, index: -1};
     for (let i = start; i < end; i++) {
         const value = Number(s[i]);
@@ -25,7 +14,7 @@ function findLargestDigit(s, start, end) {
     return match;
 }
 
-function makeLargestDigit(s, numOfDigits) {
+function makeLargestDigit(s: string, numOfDigits: number) {
     let size = s.length - numOfDigits + 1;
     let result = "";
     let start = 0;
@@ -37,5 +26,20 @@ function makeLargestDigit(s, numOfDigits) {
     return Number(result);
 }
 
-await day3.examples();
-await day3.run();
+const day3 = new Day(
+    (part, buf: string[]) => {
+        let answer = 0;
+        for (const line of buf) {
+            if (part.one) answer += makeLargestDigit(line, 2);
+            //if (part.to) answer += makeLargestDigit(line, 12);
+        }
+        return answer;
+    },
+    [17263, null],
+    [357, 3121910778619]
+);
+
+(async () => {
+    await day3.examples();
+    await day3.solve();
+})();

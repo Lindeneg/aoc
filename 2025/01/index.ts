@@ -4,7 +4,7 @@ const DIAL_LIMIT = 99;
 const LEFT = "L";
 
 const day1 = new Day(
-    (buf: string[], part, dial: number) => {
+    (part, buf: string[], dial: number) => {
         let answer = 0;
         for (let i = 0; i < buf.length; i++) {
             const row = buf[i];
