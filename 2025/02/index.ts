@@ -1,4 +1,4 @@
-import Day from "../day";
+import {Day} from "../../cl";
 
 // TODO: really slow mate, how about using your brain maybe?
 

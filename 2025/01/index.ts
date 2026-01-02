@@ -1,4 +1,4 @@
-import Day from "../day";
+import {Day} from "../../cl";
 
 const DIAL_LIMIT = 99;
 const LEFT = "L";

@@ -1,5 +1,4 @@
-import Day from "../day";
-import {DenseGrid2} from "../grid2";
+import {Day, DenseGrid2} from "../../cl";
 
 type Grid = DenseGrid2<string>;
 

@@ -1,4 +1,4 @@
-import Day from "../day";
+import {Day} from "../../cl";
 
 // TODO PART 2!!!! USE YOUR FUCKING BRAIN YOU DONKEY
 

@@ -1,4 +1,4 @@
-import Day from "../day";
+import {Day} from "../../cl";
 
 type Range = Record<"from" | "to", number>;
 type Input = {

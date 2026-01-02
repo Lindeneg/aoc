@@ -1,6 +1,13 @@
-import Day, {Result} from "../day";
-import Vec3 from "../vec3";
-import {UfObjectKeyed, UfBitPacked, UF_MODE, type UfMode, type Uf} from "../uf";
+import {
+    Day,
+    Result,
+    Vec3,
+    UfObjectKeyed,
+    UfBitPacked,
+    UF_MODE,
+    type UfMode,
+    type Uf,
+} from "../../cl";
 
 type Pair = [a: number | Vec3, b: number | Vec3, distance: number];
 type Data = [uf: Uf<any>, vecs: Vec3[], pairs: Pair[]];
