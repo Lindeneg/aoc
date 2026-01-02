@@ -47,10 +47,10 @@ function set_js_template () {
     filename="index.ts"
     cmd=(npx -y tsx)
 read -r -d '' template << EOM
-import Day from "../day";
+import {Day} from "../../cl";
 
 const day${day} = new Day(
-    (data: string[], part) => {
+    (part, data: string[]) => {
         let answer = 0;
         return answer;
     },
