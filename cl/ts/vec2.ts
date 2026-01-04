@@ -1,4 +1,6 @@
-class Vec2 {
+import type {Compressor, Point2} from "./types";
+
+class Vec2 implements Point2 {
     public x: number;
     public y: number;
 
@@ -97,6 +99,10 @@ class Vec2 {
 
     static dot(a: Vec2, b: Vec2) {
         return a.x * b.x + a.y * b.y;
+    }
+
+    static compress(vec: Vec2, compressor: Compressor<Vec2>): Vec2 {
+        return compressor.compress(vec.copy());
     }
 }
 

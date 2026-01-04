@@ -1,6 +1,7 @@
+import type {Point3} from "./types";
 import Printable from "./printable";
 
-class Vec3 extends Printable {
+class Vec3 extends Printable implements Point3 {
     public x: number;
     public y: number;
     public z: number;
