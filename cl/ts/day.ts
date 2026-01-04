@@ -27,9 +27,10 @@ type SolveFn<TData = any, TReturn = any, TArgs extends Array<any> = any> = (
     ...args: TArgs
 ) => TReturn;
 
-type Transform = (s: Buffer, split: RegExp | string) => string[];
+type Transform = (s: Buffer, split: RegExp | string, part: Part) => string[];
 type PostTransform<TVal, TArgs extends Array<any>> = (
     s: string[],
+    part: Part,
     ...args: TArgs
 ) => TVal;
 
@@ -105,12 +106,12 @@ class Day<T extends SolveFn> {
         }
     }
 
-    async #readInput(path: string, ...args: CtxFromParams<T>) {
+    async #readInput(path: string, part: Part, ...args: CtxFromParams<T>) {
         const absPath = pathMod.join(ROOT_PATH, path);
         const buf = await fs.readFile(absPath);
-        let transformed = this.#transform(buf, this.#split);
+        let transformed = this.#transform(buf, this.#split, part);
         if (typeof this.#postTransform === "function") {
-            transformed = this.#postTransform(transformed, ...args);
+            transformed = this.#postTransform(transformed, part, ...args);
         }
         return transformed;
     }
@@ -123,13 +124,10 @@ class Day<T extends SolveFn> {
     ) {
         const p = Day.#getPath(config, isExample);
         const want = Day.#getWant(config);
-        const input = await this.#readInput(p, ...args);
+        const partObj = Day.#makePart(part, isExample);
+        const input = await this.#readInput(p, partObj, ...args);
         const start = performance.now();
-        const result = await this.#fn(
-            Day.#makePart(part, isExample),
-            input,
-            ...args
-        );
+        const result = await this.#fn(partObj, input, ...args);
         const timing = (performance.now() - start).toFixed(3) + "ms";
 
         let txt = isExample ? `EXAMPLE ${part}` : `PUZZLE  ${part}`;
