@@ -1,19 +1,10 @@
-import {Day, DenseGrid2} from "../../cl";
+import {Day, Grid2} from "../../cl";
 
-type Grid = DenseGrid2<string>;
+type Grid = Grid2<string>;
 
 const PAPERROLL = "@";
 const EMPTY = ".";
 const MAX_ADJACENT_PAPERROLLS = 4;
-
-function adjacentCount(grid: Grid, originIdx: number) {
-    const origin = grid.idxToVec(originIdx);
-    let adjacentPaperRolls: number = 0;
-    grid.forEachDirection(origin, (val) => {
-        if (val === PAPERROLL) adjacentPaperRolls++;
-    });
-    return adjacentPaperRolls;
-}
 
 const day4 = new Day(
     (part, grid: Grid) => {
@@ -48,8 +39,17 @@ const day4 = new Day(
     [1480, 8899],
     [13, 43]
 ).setPostTransform((transformed) => {
-    return DenseGrid2.fromNested(transformed.map((e) => e.split("")));
+    return Grid2.fromNested(transformed.map((e) => e.split("")));
 });
+
+function adjacentCount(grid: Grid, originIdx: number) {
+    const origin = grid.idxToVec(originIdx);
+    let adjacentPaperRolls: number = 0;
+    grid.forEachDirection(origin, (val) => {
+        if (val === PAPERROLL) adjacentPaperRolls++;
+    });
+    return adjacentPaperRolls;
+}
 
 (async () => {
     await day4.examples();

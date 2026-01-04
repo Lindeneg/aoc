@@ -44,7 +44,7 @@ const day8 = new Day(
     },
     [68112, 44543856],
     [40, 25272]
-).setPostTransform((transformed, _, mode) => {
+).setPostTransform((transformed, _, __, mode) => {
     const vecs = transformed.map((line) => {
         const [x, y, z] = line.split(",");
         return new Vec3(+x, +y, +z);

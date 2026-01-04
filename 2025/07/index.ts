@@ -1,18 +1,9 @@
-import {Day, DenseGrid2, LEFT, RIGHT, type Vec2} from "../../cl";
+import {Day, Grid2, LEFT, RIGHT, type Vec2} from "../../cl";
 
-type Grid = DenseGrid2<string>;
+type Grid = Grid2<string>;
 
 const START = "S";
 const SPLITTER = "^";
-
-function incMapEl(map: Map<number, bigint>, key: number, count: bigint) {
-    if (map.has(key)) {
-        const value = map.get(key)!;
-        map.set(key, value + count);
-        return;
-    }
-    map.set(key, count);
-}
 
 const day7 = new Day(
     (part, [grid, startPos]: [Grid, Vec2]) => {
@@ -39,12 +30,19 @@ const day7 = new Day(
     [1662n, 40941112789504n],
     [21n, 40n]
 ).setPostTransform((transformed) => {
-    const grid = DenseGrid2.fromNested<string>(
-        transformed.map((e) => e.split(""))
-    );
+    const grid = Grid2.fromNested<string>(transformed.map((e) => e.split("")));
     const startPosIdx = grid.findOne((cur) => cur === START);
     return [grid, grid.idxToVec(startPosIdx)];
 });
+
+function incMapEl(map: Map<number, bigint>, key: number, count: bigint) {
+    if (map.has(key)) {
+        const value = map.get(key)!;
+        map.set(key, value + count);
+        return;
+    }
+    map.set(key, count);
+}
 
 (async () => {
     await day7.examples();

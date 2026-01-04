@@ -1,6 +1,6 @@
-import {Day, DenseGrid2} from "../../cl";
+import {Day, Grid2} from "../../cl";
 
-type Grid = DenseGrid2<string>;
+type Grid = Grid2<string>;
 
 type Calculation = {
     operation: ((a: number, b: number) => number) | null;
@@ -15,6 +15,25 @@ const OPERATIONS = {
         return a * b;
     },
 } as const;
+
+const day6 = new Day(
+    (part, grids: [Grid, Grid]) => {
+        if (part.one) return part1(grids[0]);
+        if (part.two) return part2(grids[1]);
+        return 0;
+    },
+    [4449991244405, 9348430857627],
+    [4277556, 3263827]
+).setPostTransform((transformed) => {
+    return [
+        Grid2.fromNested(
+            transformed
+                .map((e) => e.split(" "))
+                .map((e) => e.filter((ee) => !!ee))
+        ),
+        Grid2.fromNested(transformed.map((e) => e.split(""))),
+    ];
+});
 
 function makeCalculation(operation = null, operands = []): Calculation {
     return {operation, operands};
@@ -40,25 +59,6 @@ function evaluateCalculation(calculation: Calculation) {
     }
     return answer;
 }
-
-const day6 = new Day(
-    (part, grids: [Grid, Grid]) => {
-        if (part.one) return part1(grids[0]);
-        if (part.two) return part2(grids[1]);
-        return 0;
-    },
-    [4449991244405, 9348430857627],
-    [4277556, 3263827]
-).setPostTransform((transformed) => {
-    return [
-        DenseGrid2.fromNested(
-            transformed
-                .map((e) => e.split(" "))
-                .map((e) => e.filter((ee) => !!ee))
-        ),
-        DenseGrid2.fromNested(transformed.map((e) => e.split(""))),
-    ];
-});
 
 function part1(grid: Grid) {
     let answer = 0;
