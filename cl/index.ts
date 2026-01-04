@@ -7,8 +7,7 @@ export {default as Rect} from "./ts/rect";
 export {default as Polygon2} from "./ts/polygon2";
 export {default as Vec2Compressor} from "./ts/vec2-compressor";
 export {
-    DenseGrid2,
-    SparseGrid2,
+    default as Grid2,
     UP,
     RIGHT,
     DOWN,
@@ -20,7 +19,6 @@ export {
     STRAIGHT_DIRECTIONS,
     DIAGONAL_DIRECTIONS,
     ALL_DIRECTIONS,
-    type Grid2,
 } from "./ts/grid2";
 export {
     UfObjectKeyed,

@@ -14,22 +14,22 @@ export const STRAIGHT_DIRECTIONS = [UP, RIGHT, DOWN, LEFT];
 export const DIAGONAL_DIRECTIONS = [UPRIGHT, UPLEFT, DOWNLEFT, DOWNRIGHT];
 export const ALL_DIRECTIONS = [...STRAIGHT_DIRECTIONS, ...DIAGONAL_DIRECTIONS];
 
-export abstract class Grid2<T> extends Printable {
+class Grid2<T> extends Printable {
     #data: T[];
-    #width: number;
-    #height: number;
-    #entryCount: number;
+
+    readonly #width: number;
+    readonly #height: number;
+    readonly #size: number;
+
+    #vecCache: Array<Vec2>;
 
     constructor(data: T[], width: number, height: number) {
         super();
         this.#data = data;
         this.#width = width;
         this.#height = height;
-        this.#entryCount = width * height;
-    }
-
-    protected get data() {
-        return this.#data;
+        this.#size = width * height;
+        this.#vecCache = new Array(this.#size);
     }
 
     get width() {
@@ -40,8 +40,8 @@ export abstract class Grid2<T> extends Printable {
         return this.#height;
     }
 
-    get entryCount() {
-        return this.#entryCount;
+    get size() {
+        return this.#size;
     }
 
     getFromIdx(idx: number): T {
@@ -84,11 +84,17 @@ export abstract class Grid2<T> extends Printable {
     idxToCoords(idx: number) {
         const x = idx % this.width;
         const y = Math.floor(idx / this.width);
-        return [x, y];
+        return [x, y] as const;
     }
 
     idxToVec(idx: number) {
-        return new Vec2(...this.idxToCoords(idx));
+        let v = this.#vecCache[idx];
+        if (v === undefined) {
+            const [x, y] = this.idxToCoords(idx);
+            v = Object.freeze(new Vec2(x, y));
+            this.#vecCache[idx] = v;
+        }
+        return v;
     }
 
     outOfBoundsX(x: number) {
@@ -119,168 +125,47 @@ export abstract class Grid2<T> extends Printable {
         }
     }
 
-    forEachSliceCoords(
-        fn: (val: T, idx: number) => boolean | void,
-        minX: number,
-        minY: number,
-        maxX: number,
-        maxY: number
-    ) {
-        minX = Math.max(0, minX);
-        minY = Math.max(0, minY);
-        maxX = Math.min(this.width - 1, maxX);
-        maxY = Math.min(this.height - 1, maxY);
-
-        for (let y = minY; y <= maxY; y++) {
-            for (let x = minX; x <= maxX; x++) {
-                const idx = this.coordsToIdx(x, y);
-                if (fn(this.getFromIdx(idx), idx) === true) return;
-            }
+    forSome(fn: (val: T, idx: number) => boolean) {
+        for (let i = 0; i < this.size; i++) {
+            if (fn(this.getFromIdx(i), i)) return;
         }
-    }
-
-    forEachSliceVecs(
-        fn: (val: T, idx: number) => boolean | void,
-        min: Vec2,
-        max: Vec2
-    ) {
-        return this.forEachSliceCoords(fn, min.x, min.y, max.x, max.y);
-    }
-
-    findOneInSlice(
-        predicate: (val: T, idx: number) => boolean,
-        minX: number,
-        minY: number,
-        maxX: number,
-        maxY: number
-    ) {
-        let found: number = -1;
-        this.forEachSliceCoords(
-            (val, idx) => {
-                if (predicate(val, idx)) {
-                    found = idx;
-                    // stops iteration
-                    return true;
-                }
-            },
-            minX,
-            minY,
-            maxX,
-            maxY
-        );
-        return found;
-    }
-
-    findManyInSlice(
-        predicate: (val: T, idx: number) => boolean,
-        minX: number,
-        minY: number,
-        maxX: number,
-        maxY: number,
-        limit = Infinity
-    ): number[] {
-        const result: number[] = [];
-        this.forEachSliceCoords(
-            (val, idx) => {
-                if (result.length >= limit) return;
-                if (predicate(val, idx)) result.push(idx);
-            },
-            minX,
-            minY,
-            maxX,
-            maxY
-        );
-        return result;
-    }
-
-    renderSliceCoords(minX: number, minY: number, maxX: number, maxY: number) {
-        let out = "";
-        this.forEachSliceCoords(
-            (value, idx) => {
-                const vec = this.idxToVec(idx);
-                out += value;
-                if (vec.x === maxX) out += "\n";
-            },
-            minX,
-            minY,
-            maxX,
-            maxY
-        );
-        return out;
-    }
-
-    renderSlice(min: Vec2, max: Vec2) {
-        return this.renderSliceCoords(min.x, min.y, max.x, max.y);
-    }
-
-    highlightArea(a: Vec2, b: Vec2, value = "#", padding = 0) {
-        const minX = Math.min(a.x, b.x) - padding;
-        const maxX = Math.max(a.x, b.x) + padding;
-        const minY = Math.min(a.y, b.y) - padding;
-        const maxY = Math.max(a.y, b.y) + padding;
-
-        let out = "";
-
-        this.forEachSliceCoords(
-            (cell, idx) => {
-                const vec = this.idxToVec(idx);
-                if (
-                    vec.x >= a.x &&
-                    vec.x <= b.x &&
-                    vec.y >= a.y &&
-                    vec.y <= b.y
-                ) {
-                    out += value;
-                } else {
-                    out += cell;
-                }
-
-                if (vec.x === maxX) out += "\n";
-            },
-            minX,
-            minY,
-            maxX,
-            maxY
-        );
-
-        return out;
-    }
-}
-
-export class DenseGrid2<T> extends Grid2<T> {
-    #vecCache: Array<Vec2>;
-
-    constructor(data: T[], width: number, height: number) {
-        super(data, width, height);
-
-        this.#vecCache = new Array(width * height);
-    }
-
-    idxToVec(idx: number) {
-        let v = this.#vecCache[idx];
-        if (v === undefined) {
-            const [x, y] = this.idxToCoords(idx);
-            v = Object.freeze(new Vec2(x, y));
-            this.#vecCache[idx] = v;
-        }
-        return v;
     }
 
     forEach(fn: (val: T, idx: number) => void) {
-        this.forEachSliceCoords(fn, 0, 0, this.width, this.height);
+        this.forSome((...args) => {
+            fn(...args);
+            return Grid2.CONTINUE_ITER;
+        });
     }
 
-    findOne(fn: (val: T, idx: number) => boolean) {
-        return this.findOneInSlice(fn, 0, 0, this.width, this.height);
+    findOne(predicate: (val: T, idx: number) => boolean) {
+        let found: number = -1;
+        this.forSome((val, idx) => {
+            if (predicate(val, idx)) {
+                found = idx;
+                return Grid2.STOP_ITER;
+            }
+            return Grid2.CONTINUE_ITER;
+        });
+        return found;
     }
 
-    findMany(fn: (val: T, idx: number) => boolean, limit?: number) {
-        return this.findManyInSlice(fn, 0, 0, this.width, this.height, limit);
+    findMany(
+        predicate: (val: T, idx: number) => boolean,
+        limit = Infinity
+    ): number[] {
+        const result: number[] = [];
+        this.forSome((val, idx) => {
+            if (result.length >= limit) return Grid2.STOP_ITER;
+            if (predicate(val, idx)) result.push(idx);
+            return Grid2.CONTINUE_ITER;
+        });
+        return result;
     }
 
     toString() {
         let out = "";
-        for (let i = 0; i < this.entryCount; i++) {
+        for (let i = 0; i < this.size; i++) {
             out += " " + this.getFromIdx(i);
             if ((i + 1) % this.width === 0) {
                 out += "\n";
@@ -290,18 +175,19 @@ export class DenseGrid2<T> extends Grid2<T> {
     }
 
     copy() {
-        return new DenseGrid2(
-            structuredClone(this.data),
-            this.width,
-            this.height
-        );
+        return new Grid2(structuredClone(this.#data), this.width, this.height);
     }
 
     static fromNested<T>(nested: any[][]) {
-        return new DenseGrid2<T>(
+        return new Grid2<T>(
             nested.flat() as T[],
             nested[0].length,
             nested.length
         );
     }
+
+    static CONTINUE_ITER = false;
+    static STOP_ITER = true;
 }
+
+export default Grid2;
