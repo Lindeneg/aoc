@@ -1,44 +1,41 @@
-import {Day, DenseGrid2, Vec2} from "../../cl";
+import {Day, Rect, Vec2, Polygon2, Vec2Compressor} from "../../cl";
 
-type Grid = DenseGrid2<Vec2>;
-
-const RED_TILE = "#";
-const GREEN_TILE = "X";
-const EMPTY_TILE = ".";
-const RECTANGLE = "O";
-
-function areaFromOppositeCorners(a: Vec2, b: Vec2) {
-    const [x1, y1] = [Math.abs(a.x), Math.abs(a.y)];
-    const [x2, y2] = [Math.abs(b.x), Math.abs(b.y)];
-    return (x1 - x2 + 1) * (y1 - y2 + 1);
-}
+type Data = [Polygon2, Vec2[], Vec2Compressor];
 
 const day9 = new Day(
-    (part, [grid, vecs]: [Grid, Vec2[]]) => {
+    (part, [poly, vecs, compressor]: Data) => {
         let answer = 0;
         for (let i = 0; i < vecs.length; i++) {
             for (let j = i + 1; j < vecs.length; j++) {
                 const a = vecs[i];
                 const b = vecs[j];
-                if (a.x > b.x && a.y >= b.y) {
-                    const area = areaFromOppositeCorners(a, b);
-                    if (area > answer) answer = area;
+                const rect = Rect.fromOppositePoints(a, b);
+                if (
+                    part.two &&
+                    !poly.containsRectangle(Rect.compress(rect, compressor))
+                ) {
+                    continue;
                 }
+                answer = Math.max(answer, rect.areaInclusive());
             }
         }
         return answer;
     },
-    [4776100539, null],
+    [4776100539, 1476550548],
     [50, 24]
 ).setPostTransform((transformed) => {
     const vecs = transformed.map(
         (line) => new Vec2(...line.split(",").map(Number))
     );
-
-    return [new DenseGrid2([], 0, 0), vecs];
+    const compressor = new Vec2Compressor(vecs);
+    return [
+        new Polygon2(vecs.map((e) => compressor.compress(e))),
+        vecs,
+        compressor,
+    ];
 });
 
 (async () => {
-    await day9.examples(1);
-    await day9.solve(1);
+    await day9.examples();
+    await day9.solve();
 })();
