@@ -1,4 +1,4 @@
-import type {Compressor} from "./types";
+import type {Compressable} from "./types";
 import Vec2 from "./vec2";
 
 class Rect {
@@ -47,7 +47,7 @@ class Rect {
         return (this.width + 1) * (this.height + 1);
     }
 
-    static compress(rect: Rect, compressor: Compressor<Vec2>): Rect {
+    static compress(rect: Rect, compressor: Compressable<Vec2>): Rect {
         return Rect.fromVecBounds(
             Vec2.compress(rect.min, compressor),
             Vec2.compress(rect.max, compressor)

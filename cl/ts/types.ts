@@ -2,18 +2,28 @@ export type AnyFn = (...args: any) => any;
 
 export type Nullable<T> = T | null;
 
-export interface Point2 {
+export interface Comparable<T> {
+    equals(a: T): boolean;
+}
+
+export interface Point2<T = any> extends Comparable<T> {
     x: number;
     y: number;
 }
 
-export interface Point3 {
+export interface Point3<T = any> extends Comparable<T> {
     x: number;
     y: number;
     z: number;
 }
 
-export interface Compressor<T extends Point2 | Point3> {
+export type Point<T = any> = Point2<T> | Point3<T>;
+
+export interface Postionable<T extends Point> {
+    readonly pos: T;
+}
+
+export interface Compressable<T extends Point> {
     compress(v: T): T;
     decompress(v: T): T;
 }

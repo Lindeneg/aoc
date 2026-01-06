@@ -1,4 +1,13 @@
-export type {Nullable, AnyFn, Point2, Point3} from "./ts/types";
+export type {
+    Nullable,
+    AnyFn,
+    Point,
+    Point2,
+    Point3,
+    Postionable,
+    Comparable,
+    Compressable,
+} from "./ts/types";
 export {default as Day, Result} from "./ts/day";
 export {default as Printable, type Stringable} from "./ts/printable";
 export {default as Vec2} from "./ts/vec2";
