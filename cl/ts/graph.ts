@@ -117,24 +117,94 @@ export abstract class Vertex<
     }
 }
 
+/** Traversel functions that works with Graphable graphs */
+
+// Simple search result that can be used across searching algorithms.
+export type GraphSearchResult<THash> = {
+    startHash: THash;
+    endHash: THash;
+    found: boolean;
+    parents: Map<THash, Nullable<THash>>;
+};
+
 export function bfs<
     TNode extends Class<Nodeable<any, any>> = any,
     THasher extends HashFn<TNode, any> = any,
 >(
     graph: Graphable<TNode, THasher>,
-    start: InstanceType<TNode> | ReturnType<THasher>,
-    end: InstanceType<TNode> | ReturnType<THasher>
-) {
-    let startHash: ReturnType<THasher>;
-    if ("data" in start && "vertices" in start && "edges" in start) {
-        startHash = graph.hash(start);
-    } else {
-        startHash = start as ReturnType<THasher>;
+    startHash: ReturnType<THasher>,
+    endHash: ReturnType<THasher>
+): GraphSearchResult<ReturnType<THasher>> {
+    const parents = new Map<ReturnType<THasher>, ReturnType<THasher> | null>();
+    const visited = new Set<ReturnType<THasher>>();
+    const queue: Array<ReturnType<THasher>> = [];
+
+    const startVertex = graph.getVertexByHash(startHash);
+    const endVertex = graph.getVertexByHash(endHash);
+
+    if (!startVertex || !endVertex) {
+        return {
+            startHash,
+            endHash,
+            found: false,
+            parents,
+        };
     }
-    let endHash: ReturnType<THasher>;
-    if ("data" in end && "vertices" in end && "edges" in end) {
-        end = graph.hash(end);
-    } else {
-        end = end as ReturnType<THasher>;
+
+    visited.add(startHash);
+    parents.set(startHash, null);
+    queue.push(startHash);
+
+    let found = false;
+    while (queue.length > 0) {
+        const currentHash = queue.shift()!;
+        if (currentHash === endHash) {
+            found = true;
+            break;
+        }
+        const currentVertex = graph.getVertexByHash(currentHash)!;
+        for (const edge of currentVertex.edges) {
+            const neighbor = edge.next;
+            const neighborHash = graph.hash(neighbor.data);
+            if (visited.has(neighborHash)) continue;
+            visited.add(neighborHash);
+            parents.set(neighborHash, currentHash);
+            queue.push(neighborHash);
+        }
     }
+
+    return {
+        startHash,
+        endHash,
+        found,
+        parents,
+    };
+}
+
+// One thing to note:
+// distance === -1 when found === false
+export function getSearchResultDistance<THash>(
+    result: GraphSearchResult<THash>
+): number {
+    if (!result.found) return -1;
+    let distance = 0;
+    let cur: THash | null = result.endHash;
+    while (result.parents.get(cur) !== null) {
+        cur = result.parents.get(cur)!;
+        distance++;
+    }
+    return distance;
+}
+
+export function reconstructSearchResultPath<THash>(
+    result: GraphSearchResult<THash>
+): THash[] {
+    const path: THash[] = [];
+    if (!result.found) return path;
+    let cur: Nullable<THash> = result.endHash;
+    while (cur !== null) {
+        path.push(cur);
+        cur = result.parents.get(cur) ?? null;
+    }
+    return path.reverse();
 }

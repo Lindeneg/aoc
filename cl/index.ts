@@ -43,8 +43,10 @@ export {
 } from "./ts/uf";
 export {
     bfs,
+    reconstructSearchResultPath,
     Vertex,
     GRAPH_MODE,
+    type GraphSearchResult,
     type Graphable,
     type GraphMode,
 } from "./ts/graph";
