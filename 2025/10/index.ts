@@ -11,46 +11,49 @@ import {
 
 type AnyObj = Record<PropertyKey, unknown>;
 
-type AddEdgeFromVerticiesParams<TNode extends Class<Vertex<any, any>>> =
-    keyof Omit<InstanceType<TNode>["edges"][number], "next"> extends never
-        ? [p0: InstanceType<TNode>, p1: InstanceType<TNode>]
-        : [
-              p0: InstanceType<TNode>,
-              p1: InstanceType<TNode>,
-              props: ExcludeEdgeNext<TNode>,
-          ];
+// Default AddEdge parameters from verticies
+type AddEdgeFromVerticiesDefaultParams<TNode extends Class<Vertex<any, any>>> =
+    [v0: InstanceType<TNode>, v1: InstanceType<TNode>];
 
-type AddEdgeFromDataParams<TNode extends Class<Vertex<any, any>>> = keyof Omit<
-    InstanceType<TNode>["edges"][number],
-    "next"
-> extends never
-    ? [p0: InstanceType<TNode>["data"], p1: InstanceType<TNode>["data"]]
-    : [
-          p0: InstanceType<TNode>["data"],
-          p1: InstanceType<TNode>["data"],
-          props: ExcludeEdgeNext<TNode>,
-      ];
+// Default AddEdge parameters from data
+type AddEdgeFromDataDefaultParams<TNode extends Class<Vertex<any, any>>> = [
+    d0: InstanceType<TNode>["data"],
+    d1: InstanceType<TNode>["data"],
+];
 
-// Get constructor from class
-export type Ctor<C extends abstract new (...args: any) => any> = C;
-
-// Create placeholder constructor for interface
-export type Class<T> = new (...args: any) => T;
-
-interface Hashable {
-    hash(): string | number;
-}
-
-interface NodeableData extends Stringable {}
-
+// Removes the next property from edges to such that
+// we can check if any custom edge properties has been added
 type ExcludeEdgeNext<TNode extends Class<Vertex<any, any>>> = Omit<
     InstanceType<TNode>["edges"][number],
     "next"
 >;
 
-// Default Vertex implementation. Can easily be extended.
+// If custom props are provided to an edge, we extract that
+// so we can use it for function parameters. If none is provided
+// we only use the default required parameters.
+type AddEdgeParams<
+    TNode extends Class<Vertex<any, any>>,
+    TDefaultParams extends any[],
+> = keyof ExcludeEdgeNext<TNode> extends never
+    ? TDefaultParams
+    : [...TDefaultParams, props: ExcludeEdgeNext<TNode>];
+
+// Get constructor from class
+export type Ctor<C extends abstract new (...args: any) => any> = C;
+
+// Create a constructor that is required to return a T
+export type Class<T> = new (...args: any) => T;
+
+interface Hashable<T> {
+    hash(data?: T): string | number;
+}
+
+interface NodeableData extends Stringable {}
+
+// Abstract Vertex implementation accepted by VertexGraph. Can easily
+// be extended. That is actually the whole point of it.
 abstract class Vertex<TData extends NodeableData, TProps extends AnyObj = never>
-    implements Hashable
+    implements Hashable<TData>
 {
     readonly data: TData;
     readonly edges: Array<
@@ -64,7 +67,7 @@ abstract class Vertex<TData extends NodeableData, TProps extends AnyObj = never>
         this.edges = [];
     }
 
-    abstract hash(): string | number;
+    abstract hash(data?: TData): string | number;
 
     toString(): string {
         return `Vertex: ${this.data.toString()}, edges: ${this.edges.map((e) =>
@@ -73,6 +76,9 @@ abstract class Vertex<TData extends NodeableData, TProps extends AnyObj = never>
     }
 }
 
+// Generic VertexGraph. It only knows about getting, finding and adding
+// verticies and associated edges. It's very generic and allows for type-safe
+// custom extensions. Can be used both for state-based and spatial-based graphs.
 class VertexGraph<TNode extends Class<Vertex<any, any>>> extends Printable {
     #Vertex: Ctor<TNode>;
     #verticies: InstanceType<TNode>[];
@@ -88,8 +94,11 @@ class VertexGraph<TNode extends Class<Vertex<any, any>>> extends Printable {
     }
 
     getVertex(p: InstanceType<TNode>["data"]): Nullable<InstanceType<TNode>> {
-        this.#verticies[0].data;
-        return this.#verticies.find((e) => e.data.equals(p)) ?? null;
+        return this.#verticies.find((e) => e.hash() === e.hash(p)) ?? null;
+    }
+
+    getVertexByHash(hash: string | number): Nullable<InstanceType<TNode>> {
+        return this.#verticies.find((e) => e.hash() === hash) ?? null;
     }
 
     addVertex(...args: ConstructorParameters<TNode>): InstanceType<TNode> {
@@ -99,19 +108,30 @@ class VertexGraph<TNode extends Class<Vertex<any, any>>> extends Printable {
     }
 
     addEdgeFromVerticies(
-        ...[v0, v1, props]: AddEdgeFromVerticiesParams<TNode>
+        ...[v0, v1, props]: AddEdgeParams<
+            TNode,
+            AddEdgeFromVerticiesDefaultParams<TNode>
+        >
     ) {
         const p = props || {};
         v0.edges.push({next: v1, ...p});
         v1.edges.push({next: v0, ...p});
     }
 
-    addEdgeFromData(...[p0, p1, props]: AddEdgeFromDataParams<TNode>): boolean {
+    addEdgeFromData(
+        ...[p0, p1, props]: AddEdgeParams<
+            TNode,
+            AddEdgeFromDataDefaultParams<TNode>
+        >
+    ): boolean {
         const v0 = this.getVertex(p0);
         if (!v0) return false;
         const v1 = this.getVertex(p1);
         if (!v1) return false;
-        const args = [v0, v1, props] as AddEdgeFromDataParams<TNode>;
+        const args = [v0, v1, props] as AddEdgeParams<
+            TNode,
+            AddEdgeFromDataDefaultParams<TNode>
+        >;
         this.addEdgeFromVerticies(...args);
         return true;
     }
@@ -121,7 +141,7 @@ class VertexGraph<TNode extends Class<Vertex<any, any>>> extends Printable {
         for (const vertex of this.verticies) {
             let edges = "";
             for (const {next, ...rest} of vertex.edges) {
-                edges += `- ${next.pos} ${JSON.stringify(rest)}\n`;
+                edges += `- ${next.data} ${JSON.stringify(rest)}\n`;
             }
             str += `Vertex ${vertex.data}\n`;
             if (edges.length > 0) {
@@ -132,30 +152,10 @@ class VertexGraph<TNode extends Class<Vertex<any, any>>> extends Printable {
     }
 }
 
+// TODO not final this is just to play with vertex graph types
 type MachineConfig = Uint8Array;
 
-class MachineVertex extends Vertex<MachineConfig, {weight: number}> {
-    constructor(data: MachineConfig) {
-        super(data);
-    }
-
-    hash(): string | number {
-        // TODO: do an actual hash..
-        return 0;
-    }
-}
-
-class MachineVertex2 extends Vertex<MachineConfig> {
-    constructor(data: MachineConfig) {
-        super(data);
-    }
-
-    hash(): string {
-        // TODO: do an actual hash..
-        return "";
-    }
-}
-
+// TODO not final this is just to play with vertex graph types
 type Machine = {
     desiredConfig: MachineConfig;
     lights: Uint8Array;
@@ -163,25 +163,37 @@ type Machine = {
     joltage: number[];
 };
 
-const k = new VertexGraph(MachineVertex);
-const kk = new VertexGraph(MachineVertex2);
+// TODO not final this is just to play with vertex graph types
+class MachineVertexCustomProps extends Vertex<MachineConfig, {weight: number}> {
+    constructor(data: MachineConfig) {
+        super(data);
+    }
 
-k.addEdgeFromVerticies(
-    new MachineVertex([] as any),
-    new MachineVertex([] as any),
-    {weight: 1}
-);
+    hash(data?: MachineConfig): string | number {
+        // TODO not final this is just to play with vertex graph types
+        return 0;
+    }
+}
 
-kk.addEdgeFromVerticies(
-    new MachineVertex2([] as any),
-    new MachineVertex2([] as any)
-);
+// TODO not final this is just to play with vertex graph types
+class MachineVertexNoProps extends Vertex<MachineConfig> {
+    constructor(data: MachineConfig) {
+        super(data);
+    }
 
-k.addEdgeFromData([] as any, [] as any, {weight: 1});
-kk.addEdgeFromData([] as any, [] as any);
+    hash(data?: MachineConfig): string {
+        // TODO not final this is just to play with vertex graph types
+        return "";
+    }
+}
 
-k.verticies[0].edges[0].next.edges[0].next.edges[0].;
-kk.verticies[0].edges[0].next.edges[0].next;
+const graph1 = new VertexGraph(MachineVertexCustomProps);
+const graph2 = new VertexGraph(MachineVertexNoProps);
+
+graph1.addEdgeFromData(null, null, {weight: 0});
+graph1.getVertex()?.edges[0].next.edges[0];
+graph2.addEdgeFromData(null, null);
+graph2.getVertex()?.edges[0].next.edges[0];
 
 const day10 = new Day(
     (part, machines: Machine[]) => {
