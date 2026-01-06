@@ -157,6 +157,9 @@ export function bfs<
 
     let found = false;
     while (queue.length > 0) {
+        // TODO:
+        // O(n) per shift due to array reindexing.
+        // could use index-based queue instead - or a dequeue
         const currentHash = queue.shift()!;
         if (currentHash === endHash) {
             found = true;
