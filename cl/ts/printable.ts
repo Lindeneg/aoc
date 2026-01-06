@@ -1,8 +1,5 @@
 import util from "node:util";
-
-export interface Stringable {
-    toString(): string;
-}
+import type {Stringable} from "./types";
 
 abstract class Printable implements Stringable {
     toString() {

@@ -1,4 +1,5 @@
-import Printable, {type Stringable} from "./printable";
+import Printable from "./printable";
+import type {Stringable} from "./types";
 
 export const UF_MODE = {
     OBJECT: "OBJECT_KEYED",

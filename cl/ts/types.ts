@@ -1,5 +1,9 @@
 export type AnyFn = (...args: any) => any;
 
+export interface Stringable {
+    toString(): string;
+}
+
 export type Nullable<T> = T | null;
 
 export interface Comparable<T> {
@@ -27,3 +31,9 @@ export interface Compressable<T extends Point> {
     compress(v: T): T;
     decompress(v: T): T;
 }
+
+export type AnyObj = Record<PropertyKey, unknown>;
+
+export type Ctor<C extends abstract new (...args: any) => any> = C;
+
+export type Class<T> = new (...args: any) => T;
