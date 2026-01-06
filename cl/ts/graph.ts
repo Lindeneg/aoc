@@ -120,6 +120,7 @@ export abstract class Vertex<
 /** Traversel functions that works with Graphable graphs */
 
 // Simple search result that can be used across searching algorithms.
+// NOTE: parents.get(startHash) === null if startHash exists.
 export type GraphSearchResult<THash> = {
     startHash: THash;
     endHash: THash;
@@ -159,7 +160,7 @@ export function bfs<
     while (queue.length > 0) {
         // TODO:
         // O(n) per shift due to array reindexing.
-        // could use index-based queue instead - or a dequeue
+        // could use index-based queue instead - or a dequeue.
         const currentHash = queue.shift()!;
         if (currentHash === endHash) {
             found = true;
@@ -185,7 +186,7 @@ export function bfs<
 }
 
 // One thing to note:
-// distance === -1 when found === false
+// distance === -1 when found === false.
 export function getSearchResultDistance<THash>(
     result: GraphSearchResult<THash>
 ): number {
