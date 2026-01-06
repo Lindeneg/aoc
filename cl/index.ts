@@ -20,7 +20,6 @@ export {default as Rect} from "./ts/rect";
 export {default as Polygon2} from "./ts/polygon2";
 export {default as Vec2Compressor} from "./ts/vec2-compressor";
 export {default as VertexGraph} from "./ts/vertex-graph";
-export {Vertex, type Graphable} from "./ts/graph";
 export {
     default as Grid2,
     UP,
@@ -42,4 +41,11 @@ export {
     type UfMode,
     type Uf,
 } from "./ts/uf";
+export {
+    bfs,
+    Vertex,
+    GRAPH_MODE,
+    type Graphable,
+    type GraphMode,
+} from "./ts/graph";
 export {orient2, pointOnSegment2, segmentsIntersect2} from "./ts/geometry";

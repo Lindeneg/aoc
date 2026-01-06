@@ -1,6 +1,8 @@
 import Printable from "./printable";
 import {
     Vertex,
+    GRAPH_MODE,
+    type GraphMode,
     type Graphable,
     type HashFn,
     type AddEdgeParams,
@@ -17,17 +19,27 @@ class VertexGraph<
         THasher extends HashFn<TNode, any>,
     >
     extends Printable
-    implements Graphable<TNode, ReturnType<THasher>>
+    implements Graphable<TNode, THasher>
 {
     #Vertex: Ctor<TNode>;
     #vertices: Map<ReturnType<THasher>, InstanceType<TNode>>;
     #hasher: THasher;
+    #mode: GraphMode;
 
-    constructor(nodeCtor: TNode, hasher: THasher) {
+    constructor(
+        nodeCtor: TNode,
+        hasher: THasher,
+        mode: GraphMode = GRAPH_MODE.UNDIRECTED
+    ) {
         super();
         this.#Vertex = nodeCtor;
         this.#hasher = hasher;
+        this.#mode = mode;
         this.#vertices = new Map();
+    }
+
+    get hash() {
+        return this.#hasher;
     }
 
     get hashes() {
@@ -65,6 +77,7 @@ class VertexGraph<
         const hash = this.#hasher(vertex.data);
         let old: Nullable<InstanceType<TNode>> = null;
         if (this.#vertices.has(hash)) {
+            // TODO: remove old edge connections
             old = this.#vertices.get(hash)!;
         }
         this.#vertices.set(hash, vertex);
@@ -79,7 +92,9 @@ class VertexGraph<
     ) {
         const p = props || {};
         v0.edges.push({next: v1, ...p});
-        v1.edges.push({next: v0, ...p});
+        if (this.#mode === GRAPH_MODE.UNDIRECTED) {
+            v1.edges.push({next: v0, ...p});
+        }
     }
 
     addEdgeFromData(

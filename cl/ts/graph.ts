@@ -1,6 +1,13 @@
 import Printable from "./printable";
 import type {Nullable, Class, AnyObj, Stringable} from "./types";
 
+export const GRAPH_MODE = {
+    DIRECTED: 0,
+    UNDIRECTED: 1,
+} as const;
+
+export type GraphMode = (typeof GRAPH_MODE)[keyof typeof GRAPH_MODE];
+
 // Default AddEdge parameters from vertices
 export type AddEdgeFromVerticiesDefaultParams<
     TNode extends Class<Nodeable<any, any>>,
@@ -50,14 +57,15 @@ export interface Nodeable<
 // Represents any graph that works with Nodeables
 export interface Graphable<
     TNode extends Class<Nodeable<any, any>> = any,
-    THash = any,
+    THasher extends HashFn<TNode, any> = any,
 > extends Printable {
-    get hashes(): MapIterator<THash>;
+    get hashes(): MapIterator<ReturnType<THasher>>;
+
+    get hash(): THasher;
 
     getVertex(p: InstanceType<TNode>["data"]): Nullable<InstanceType<TNode>>;
-    getVertexByHash(hash: THash): Nullable<InstanceType<TNode>>;
+    getVertexByHash(hash: ReturnType<THasher>): Nullable<InstanceType<TNode>>;
     addVertex(...args: ConstructorParameters<TNode>): InstanceType<TNode>;
-
     addVertexOverride(
         ...args: ConstructorParameters<TNode>
     ): [
@@ -106,5 +114,27 @@ export abstract class Vertex<
         return `Vertex: ${this.data.toString()}, edges: ${this.edges.map((e) =>
             e.next.data.toString()
         )}`;
+    }
+}
+
+export function bfs<
+    TNode extends Class<Nodeable<any, any>> = any,
+    THasher extends HashFn<TNode, any> = any,
+>(
+    graph: Graphable<TNode, THasher>,
+    start: InstanceType<TNode> | ReturnType<THasher>,
+    end: InstanceType<TNode> | ReturnType<THasher>
+) {
+    let startHash: ReturnType<THasher>;
+    if ("data" in start && "vertices" in start && "edges" in start) {
+        startHash = graph.hash(start);
+    } else {
+        startHash = start as ReturnType<THasher>;
+    }
+    let endHash: ReturnType<THasher>;
+    if ("data" in end && "vertices" in end && "edges" in end) {
+        end = graph.hash(end);
+    } else {
+        end = end as ReturnType<THasher>;
     }
 }
