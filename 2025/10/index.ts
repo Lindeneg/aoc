@@ -1,41 +1,69 @@
-import {Day, VertexGraph, Vertex, bfs} from "../../cl";
+import {Day, Vertex, VertexGraph, bfs, getSearchResultDistance} from "../../cl";
 
-type MachineConfig = Uint8Array;
+type Configuration = readonly boolean[];
 
 type Machine = {
-    desiredConfig: MachineConfig;
-    lights: Uint8Array;
-    buttons: number[];
-    joltage: number[];
+    readonly target: Configuration;
+    readonly buttons: readonly (readonly number[])[];
 };
 
-class MachineVertexCustomProps extends Vertex<MachineConfig, {weight: number}> {
-    constructor(data: MachineConfig) {
+class MachineVertex extends Vertex<Configuration> {
+    constructor(data: Configuration) {
         super(data);
     }
 }
 
-const graph1 = new VertexGraph(MachineVertexCustomProps, (d) => 2 as number);
-
-graph1.getVertexByHash(0)!.edges[0].next.edges[0].next;
-
-bfs(graph1, 1, graph1.getVertex({} as MachineConfig)!);
-
 const day10 = new Day(
-    (part, machines: Machine[]) => {
+    (_, machines: Machine[]) => {
         let answer = 0;
         for (const machine of machines) {
+            const graph = new VertexGraph(MachineVertex, (cfg) =>
+                cfg.reduce((acc, cur, idx) => {
+                    if (cur) acc |= 1 << idx;
+                    return acc;
+                }, 0)
+            );
+
+            const start = Array(machine.target.length).fill(false);
+            const startHash = graph.hash(start);
+            const endHash = graph.hash(machine.target);
+
+            graph.addVertex(start);
+
+            const result = bfs(graph, startHash, endHash, (vertex) => {
+                const cfg = vertex.data;
+
+                return machine.buttons.map((button) => {
+                    const next = cfg.slice(); // clone
+                    for (const idx of button) {
+                        next[idx] = !next[idx];
+                    }
+                    return next;
+                });
+            });
+
+            answer += getSearchResultDistance(result);
         }
         return answer;
     },
-    [null, null],
+    [441, null],
     [7, null]
 ).setPostTransform((transformed) => {
-    const machines: Machine[] = [];
-    return machines;
+    return transformed.map((line) => {
+        const diagramMatch = line.match(/\[([.#]+)\]/)!;
+        const buttonsMatch = [...line.matchAll(/\(([\d,]+)\)/g)];
+
+        const target: Configuration = [...diagramMatch[1]].map(
+            (c) => c === "#"
+        );
+
+        const buttons = buttonsMatch.map((m) => m[1].split(",").map(Number));
+
+        return {target, buttons};
+    });
 });
 
 (async () => {
-    await day10.examples(1);
-    //await day10.solve();
+    await day10.examples();
+    await day10.solve();
 })();
