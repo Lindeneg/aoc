@@ -1,6 +1,5 @@
 import Printable from "./printable";
 import type {Nullable, Class, AnyObj, Stringable} from "./types";
-import VertexGraph from "./vertex-graph";
 
 export const GRAPH_MODE = {
     DIRECTED: 0,

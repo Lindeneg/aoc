@@ -44,6 +44,7 @@ export {
 export {
     bfs,
     reconstructSearchResultPath,
+    getSearchResultDistance,
     Vertex,
     GRAPH_MODE,
     type GraphSearchResult,
