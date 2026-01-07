@@ -1,5 +1,6 @@
 import Printable from "./printable";
 import type {Nullable, Class, AnyObj, Stringable} from "./types";
+import VertexGraph from "./vertex-graph";
 
 export const GRAPH_MODE = {
     DIRECTED: 0,
@@ -117,8 +118,6 @@ export abstract class Vertex<
     }
 }
 
-export type ExpandFn<TData> = (data: TData) => Iterable<TData>;
-
 /** Traversel functions that works with Graphable graphs */
 
 // Simple search result that can be used across searching algorithms.
@@ -130,23 +129,48 @@ export type GraphSearchResult<THash> = {
     parents: Map<THash, Nullable<THash>>;
 };
 
+type VertexFromGraph<TGraph extends Graphable> = NonNullable<
+    ReturnType<TGraph["getVertex"]>
+>;
+
+type VertexDataFromGraph<TGraph extends Graphable> =
+    VertexFromGraph<TGraph>["data"];
+
+export type ExpandReturn<TNode extends Class<Nodeable<any, any>>> =
+    keyof ExcludeEdgeNext<TNode> extends never
+        ? InstanceType<TNode>["data"]
+        : {data: InstanceType<TNode>["data"]} & ExcludeEdgeNext<TNode>;
+
+export type ExpandFn<TGraph extends Graphable> = (
+    vertex: VertexFromGraph<TGraph>
+) => Iterable<ExpandReturn<Class<VertexFromGraph<TGraph>>>>;
+
 export function bfs<TGraph extends Graphable>(
     graph: TGraph,
     startHash: ReturnType<TGraph["hash"]>,
     endHash: ReturnType<TGraph["hash"]>,
-    expand?: ExpandFn<NonNullable<ReturnType<TGraph["getVertex"]>>>
+    expand?: ExpandFn<TGraph>
 ): GraphSearchResult<ReturnType<TGraph["hash"]>> {
     const parents = new Map<
         ReturnType<TGraph["hash"]>,
         Nullable<ReturnType<TGraph["hash"]>>
     >();
+
+    if (startHash === endHash) {
+        parents.set(startHash, null);
+        return {
+            startHash,
+            endHash,
+            found: true,
+            parents,
+        };
+    }
+
     const visited = new Set<ReturnType<TGraph["hash"]>>();
     const queue: Array<ReturnType<TGraph["hash"]>> = [];
 
     const startVertex = graph.getVertexByHash(startHash);
-    const endVertex = graph.getVertexByHash(endHash);
-
-    if (!startVertex || !endVertex) {
+    if (!startVertex) {
         return {
             startHash,
             endHash,
@@ -171,16 +195,28 @@ export function bfs<TGraph extends Graphable>(
         }
         const currentVertex = graph.getVertexByHash(currentHash)!;
 
-        if (expand) {
-            for (const nextData of expand(currentVertex)) {
-                const nextHash = graph.hash(nextData);
+        if (typeof expand === "function") {
+            for (const result of expand(currentVertex)) {
+                let data: VertexDataFromGraph<TGraph>;
+                let props: AnyObj = {};
+
+                if (
+                    typeof result === "object" &&
+                    result !== null &&
+                    "data" in result
+                ) {
+                    ({data, ...props} = result);
+                } else {
+                    data = result;
+                }
+                const nextHash = graph.hash(data);
 
                 let nextVertex = graph.getVertexByHash(nextHash);
                 if (!nextVertex) {
-                    nextVertex = graph.addVertex(nextData);
+                    nextVertex = graph.addVertex(data);
                 }
 
-                graph.addEdgeFromVerticies(currentVertex, nextVertex);
+                graph.addEdgeFromVerticies(currentVertex, nextVertex, props);
             }
         }
 
