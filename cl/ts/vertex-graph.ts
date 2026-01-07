@@ -84,6 +84,7 @@ class VertexGraph<
         return [vertex, old];
     }
 
+    // TODO what if the edge already exists?
     addEdgeFromVerticies(
         ...[v0, v1, props]: AddEdgeParams<
             TNode,

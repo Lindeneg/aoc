@@ -117,6 +117,8 @@ export abstract class Vertex<
     }
 }
 
+export type ExpandFn<TData> = (data: TData) => Iterable<TData>;
+
 /** Traversel functions that works with Graphable graphs */
 
 // Simple search result that can be used across searching algorithms.
@@ -128,17 +130,18 @@ export type GraphSearchResult<THash> = {
     parents: Map<THash, Nullable<THash>>;
 };
 
-export function bfs<
-    TNode extends Class<Nodeable<any, any>> = any,
-    THasher extends HashFn<TNode, any> = any,
->(
-    graph: Graphable<TNode, THasher>,
-    startHash: ReturnType<THasher>,
-    endHash: ReturnType<THasher>
-): GraphSearchResult<ReturnType<THasher>> {
-    const parents = new Map<ReturnType<THasher>, ReturnType<THasher> | null>();
-    const visited = new Set<ReturnType<THasher>>();
-    const queue: Array<ReturnType<THasher>> = [];
+export function bfs<TGraph extends Graphable>(
+    graph: TGraph,
+    startHash: ReturnType<TGraph["hash"]>,
+    endHash: ReturnType<TGraph["hash"]>,
+    expand?: ExpandFn<NonNullable<ReturnType<TGraph["getVertex"]>>>
+): GraphSearchResult<ReturnType<TGraph["hash"]>> {
+    const parents = new Map<
+        ReturnType<TGraph["hash"]>,
+        Nullable<ReturnType<TGraph["hash"]>>
+    >();
+    const visited = new Set<ReturnType<TGraph["hash"]>>();
+    const queue: Array<ReturnType<TGraph["hash"]>> = [];
 
     const startVertex = graph.getVertexByHash(startHash);
     const endVertex = graph.getVertexByHash(endHash);
@@ -167,6 +170,20 @@ export function bfs<
             break;
         }
         const currentVertex = graph.getVertexByHash(currentHash)!;
+
+        if (expand) {
+            for (const nextData of expand(currentVertex)) {
+                const nextHash = graph.hash(nextData);
+
+                let nextVertex = graph.getVertexByHash(nextHash);
+                if (!nextVertex) {
+                    nextVertex = graph.addVertex(nextData);
+                }
+
+                graph.addEdgeFromVerticies(currentVertex, nextVertex);
+            }
+        }
+
         for (const edge of currentVertex.edges) {
             const neighbor = edge.next;
             const neighborHash = graph.hash(neighbor.data);
