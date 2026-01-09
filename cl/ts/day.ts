@@ -49,7 +49,7 @@ const DEFAULT_PATH = ["puzzle.in", "example.in"] as const;
 
 // just to make it easier if the solve function
 // wants to return some extra context for logging
-export class Result<TData = any> {
+export class DayResult<TData = any> {
     data: TData;
     ctx: unknown;
 
@@ -106,14 +106,18 @@ class Day<T extends SolveFn> {
         }
     }
 
-    async #readInput(path: string, part: Part, ...args: CtxFromParams<T>) {
-        const absPath = pathMod.join(ROOT_PATH, path);
-        const buf = await fs.readFile(absPath);
-        let transformed = this.#transform(buf, this.#split, part);
-        if (typeof this.#postTransform === "function") {
-            transformed = this.#postTransform(transformed, part, ...args);
+    async #evaluateParts(
+        [part1, part2]: DayConfig<ReturnType<T>>,
+        part: number,
+        isExample: boolean = false,
+        ...args: CtxFromParams<T>
+    ) {
+        if (Day.#isTarget(part, 1)) {
+            await this.#evaluate(part1, 1, isExample, ...args);
         }
-        return transformed;
+        if (Day.#isTarget(part, 2)) {
+            await this.#evaluate(part2, 2, isExample, ...args);
+        }
     }
 
     async #evaluate(
@@ -149,18 +153,14 @@ class Day<T extends SolveFn> {
         }
     }
 
-    async #evaluateParts(
-        [part1, part2]: DayConfig<ReturnType<T>>,
-        part: number,
-        isExample: boolean = false,
-        ...args: CtxFromParams<T>
-    ) {
-        if (Day.#isTarget(part, 1)) {
-            await this.#evaluate(part1, 1, isExample, ...args);
+    async #readInput(path: string, part: Part, ...args: CtxFromParams<T>) {
+        const absPath = pathMod.join(ROOT_PATH, path);
+        const buf = await fs.readFile(absPath);
+        let transformed = this.#transform(buf, this.#split, part);
+        if (typeof this.#postTransform === "function") {
+            transformed = this.#postTransform(transformed, part, ...args);
         }
-        if (Day.#isTarget(part, 2)) {
-            await this.#evaluate(part2, 2, isExample, ...args);
-        }
+        return transformed;
     }
 
     static #defaultTransform(s: Buffer, split: RegExp | string) {
