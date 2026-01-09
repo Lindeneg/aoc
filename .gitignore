@@ -3,4 +3,5 @@ node_modules
 notes
 *.in
 !2025/*/*.in
+c*.md
 #!example*.in
