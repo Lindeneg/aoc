@@ -37,3 +37,18 @@ export type AnyObj = Record<PropertyKey, unknown>;
 export type Ctor<C extends abstract new (...args: any) => any> = C;
 
 export type Class<T> = new (...args: any) => T;
+
+export type ResultSuccess<TData> = {
+    data: TData;
+    ok: true;
+};
+
+export type ResultFailure<TErrorCtx extends AnyObj> = {
+    msg: string;
+    ctx?: TErrorCtx;
+    ok: false;
+};
+
+export type Result<TData, TErrorCtx extends AnyObj = AnyObj> =
+    | ResultSuccess<TData>
+    | ResultFailure<TErrorCtx>;
