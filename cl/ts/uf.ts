@@ -46,10 +46,13 @@ export class UfObjectKeyed<T extends Stringable>
     }
 
     findNonCompress(x: T) {
-        // TODO maybe throw if cannot be found
-        const parent = this.#parent.get(x)!;
-        if (parent === x) return x;
-        return this.find(parent);
+        let current = x;
+        let parent = this.#parent.get(current);
+        while (parent !== undefined && parent !== current) {
+            current = parent;
+            parent = this.#parent.get(current);
+        }
+        return current;
     }
 
     merge(x: T, y: T) {
