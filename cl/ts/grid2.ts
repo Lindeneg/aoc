@@ -123,7 +123,7 @@ class Grid2<T> extends Printable {
         directions: Vec2[] = ALL_DIRECTIONS
     ) {
         for (const dir of directions) {
-            const next = Vec2.add(origin, dir);
+            const next = origin.add(dir);
             if (this.outOfBounds(next)) continue;
             fn(this.getFromVec(next), next, dir);
         }

@@ -49,8 +49,8 @@ class Rect {
 
     static compress(rect: Rect, compressor: Compressible<Vec2>): Rect {
         return Rect.fromVecBounds(
-            Vec2.compress(rect.min, compressor),
-            Vec2.compress(rect.max, compressor)
+            rect.min.compress(compressor),
+            rect.max.compress(compressor)
         );
     }
 
