@@ -11,9 +11,11 @@ import {
 } from "./graph";
 import type {Class, Ctor, Nullable} from "./types";
 
-// Generic VertexGraph. It only knows about getting, finding and adding
-// verticies and associated edges. It's very generic and allows for type-safe
-// custom extensions. Can be used both for state-based and spatial-based graphs.
+/**
+ * Generic VertexGraph. It only knows about getting, finding and adding
+ * verticies and associated edges. It's very generic and allows for type-safe
+ * custom extensions. Can be used both for state-based and spatial-based graphs.
+ */
 class VertexGraph<
         TNode extends Class<Vertex<any, any>>,
         THasher extends HashFn<TNode, any>,
