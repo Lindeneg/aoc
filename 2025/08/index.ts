@@ -1,6 +1,6 @@
 import {
     Day,
-    Result,
+    DayResult,
     Vec3,
     UfObjectKeyed,
     UfBitPacked,
@@ -40,7 +40,7 @@ const day8 = new Day(
                 .reduce((a, b) => a * b, 1);
         }
 
-        return new Result(answer, mode);
+        return new DayResult(answer, mode);
     },
     [68112, 44543856],
     [40, 25272]
