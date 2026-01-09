@@ -1,53 +1,93 @@
+import Printable from "./printable";
 import type {Compressible, Point2} from "./types";
 
-class Vec2 implements Point2 {
+class Vec2 extends Printable implements Point2 {
     public x: number;
     public y: number;
 
     constructor(x = 0, y = 0) {
+        super();
         this.x = Number(x);
         this.y = Number(y);
     }
 
     add(o: Vec2) {
+        return new Vec2(this.x + o.x, this.y + o.y);
+    }
+
+    sub(o: Vec2) {
+        return new Vec2(this.x - o.x, this.y - o.y);
+    }
+
+    mul(o: Vec2) {
+        return new Vec2(this.x * o.x, this.y * o.y);
+    }
+
+    div(o: Vec2) {
+        return new Vec2(this.x / o.x, this.y / o.y);
+    }
+
+    scale(f: number) {
+        return new Vec2(this.x * f, this.y * f);
+    }
+
+    shrink(f: number) {
+        return new Vec2(this.x / f, this.y / f);
+    }
+
+    normalize() {
+        const m = this.mag();
+        if (m === 0) return new Vec2(0, 0);
+        return this.shrink(m);
+    }
+
+    compress(compressor: Compressible<Vec2>): Vec2 {
+        return compressor.compress(this.copy());
+    }
+
+    compressMut(compressor: Compressible<Vec2>): Vec2 {
+        return compressor.compress(this);
+    }
+
+    addMut(o: Vec2) {
         this.x += o.x;
         this.y += o.y;
         return this;
     }
 
-    sub(o: Vec2) {
+    subMut(o: Vec2) {
         this.x -= o.x;
         this.y -= o.y;
         return this;
     }
 
-    mul(o: Vec2) {
+    mulMut(o: Vec2) {
         this.x *= o.x;
         this.y *= o.y;
         return this;
     }
 
-    div(o: Vec2) {
+    divMut(o: Vec2) {
         this.x /= o.x;
         this.y /= o.y;
         return this;
     }
 
-    scale(f: number) {
+    scaleMut(f: number) {
         this.x *= f;
         this.y *= f;
         return this;
     }
 
-    shrink(f: number) {
+    shrinkMut(f: number) {
         this.x /= f;
         this.y /= f;
         return this;
     }
 
-    normalize() {
+    normalizeMut() {
         const m = this.mag();
-        if (m !== 0) this.shrink(m);
+        if (m !== 0) this.shrinkMut(m);
         return this;
     }
 
@@ -79,30 +119,6 @@ class Vec2 implements Point2 {
 
     toString() {
         return `(${this.x},${this.y})`;
-    }
-
-    static add(a: Vec2, b: Vec2) {
-        return new Vec2(a.x + b.x, a.y + b.y);
-    }
-
-    static sub(a: Vec2, b: Vec2) {
-        return new Vec2(a.x - b.x, a.y - b.y);
-    }
-
-    static mul(a: Vec2, b: Vec2) {
-        return new Vec2(a.x * b.x, a.y * b.y);
-    }
-
-    static div(a: Vec2, b: Vec2) {
-        return new Vec2(a.x / b.x, a.y / b.y);
-    }
-
-    static dot(a: Vec2, b: Vec2) {
-        return a.x * b.x + a.y * b.y;
-    }
-
-    static compress(vec: Vec2, compressor: Compressible<Vec2>): Vec2 {
-        return compressor.compress(vec.copy());
     }
 }
 
