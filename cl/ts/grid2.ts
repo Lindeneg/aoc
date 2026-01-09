@@ -1,19 +1,22 @@
 import Vec2 from "./vec2";
 import Printable from "./printable";
 
-export const UP = new Vec2(0, -1);
-export const RIGHT = new Vec2(1, 0);
-export const DOWN = new Vec2(0, 1);
-export const LEFT = new Vec2(-1, 0);
-export const UPRIGHT = new Vec2(1, -1);
-export const UPLEFT = new Vec2(-1, -1);
-export const DOWNRIGHT = new Vec2(1, 1);
-export const DOWNLEFT = new Vec2(-1, 1);
+export const UP = Object.freeze(new Vec2(0, -1));
+export const RIGHT = Object.freeze(new Vec2(1, 0));
+export const DOWN = Object.freeze(new Vec2(0, 1));
+export const LEFT = Object.freeze(new Vec2(-1, 0));
+export const UPRIGHT = Object.freeze(new Vec2(1, -1));
+export const UPLEFT = Object.freeze(new Vec2(-1, -1));
+export const DOWNRIGHT = Object.freeze(new Vec2(1, 1));
+export const DOWNLEFT = Object.freeze(new Vec2(-1, 1));
 
 export const STRAIGHT_DIRECTIONS = [UP, RIGHT, DOWN, LEFT];
 export const DIAGONAL_DIRECTIONS = [UPRIGHT, UPLEFT, DOWNLEFT, DOWNRIGHT];
 export const ALL_DIRECTIONS = [...STRAIGHT_DIRECTIONS, ...DIAGONAL_DIRECTIONS];
 
+/**
+ * 2D grid with fixed dimensions and neighbor iteration utilities.
+ */
 class Grid2<T> extends Printable {
     #data: T[];
 
@@ -21,7 +24,7 @@ class Grid2<T> extends Printable {
     readonly #height: number;
     readonly #size: number;
 
-    #vecCache: Array<Vec2>;
+    #vecCache: Map<number, Vec2>;
 
     constructor(data: T[], width: number, height: number) {
         super();
@@ -29,7 +32,7 @@ class Grid2<T> extends Printable {
         this.#width = width;
         this.#height = height;
         this.#size = width * height;
-        this.#vecCache = new Array(this.#size);
+        this.#vecCache = new Map();
     }
 
     get width() {
@@ -70,6 +73,7 @@ class Grid2<T> extends Printable {
 
     coordsToIdx(x: number, y: number) {
         if (this.outOfBoundsEx(x, y)) {
+            // TODO: dont throw error
             throw new Error(
                 `out of bounds: (${x}, ${y}) for grid ${this.width}×${this.height}`
             );
@@ -88,11 +92,11 @@ class Grid2<T> extends Printable {
     }
 
     idxToVec(idx: number) {
-        let v = this.#vecCache[idx];
+        let v = this.#vecCache.get(idx);
         if (v === undefined) {
             const [x, y] = this.idxToCoords(idx);
             v = Object.freeze(new Vec2(x, y));
-            this.#vecCache[idx] = v;
+            this.#vecCache.set(idx, v);
         }
         return v;
     }
