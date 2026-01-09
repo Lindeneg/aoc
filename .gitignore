@@ -4,4 +4,5 @@ notes
 *.in
 !2025/*/*.in
 c*.md
+dist/
 #!example*.in
