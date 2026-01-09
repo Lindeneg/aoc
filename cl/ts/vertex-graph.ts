@@ -122,9 +122,9 @@ class VertexGraph<
             const vertex = this.getVertexByHash(hash)!;
             let edges = "";
             for (const {next, ...rest} of vertex.edges) {
-                edges += `- ${next.data} ${JSON.stringify(rest)}\n`;
+                edges += `- ${next} ${JSON.stringify(rest)}\n`;
             }
-            str += `Vertex ${vertex.data}\n`;
+            str += `Vertex ${vertex}\n`;
             if (edges.length > 0) {
                 str += `${edges}`;
             }
