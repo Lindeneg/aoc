@@ -117,9 +117,6 @@ export abstract class Vertex<
     }
 }
 
-/** Traversel functions that works with Graphable graphs */
-
-// Simple search result that can be used across searching algorithms.
 // NOTE: parents.get(startHash) === null if startHash exists.
 export type GraphSearchResult<THash> = {
     startHash: THash;
@@ -144,6 +141,24 @@ export type ExpandFn<TGraph extends Graphable> = (
     vertex: VertexFromGraph<TGraph>
 ) => Iterable<ExpandReturn<Class<VertexFromGraph<TGraph>>>>;
 
+/**
+ * Performs breadth-first search on a graph.
+ *
+ * @param graph - The graph to search
+ * @param startHash - Hash of the starting vertex
+ * @param endHash - Hash of the target vertex
+ * @param expand - Optional function to dynamically generate neighbors during traversal
+ *
+ * IMPORTANT: When an expand function is provided, this function MUTATES the graph
+ * by adding new vertices and edges as they are discovered during traversal.
+ * This enables implicit graph construction (useful for state-space search where
+ * the full graph is too large to build upfront). If you need the original graph
+ * unchanged, either:
+ * 1. Don't use the expand function (pre-build the graph), or
+ * 2. Copy the graph before calling bfs
+ *
+ * @returns GraphSearchResult with parent tracking for path reconstruction
+ */
 export function bfs<TGraph extends Graphable>(
     graph: TGraph,
     startHash: ReturnType<TGraph["hash"]>,
@@ -235,8 +250,6 @@ export function bfs<TGraph extends Graphable>(
     };
 }
 
-// One thing to note:
-// distance === -1 when found === false.
 export function getSearchResultDistance<THash>(
     result: GraphSearchResult<THash>
 ): number {
