@@ -167,6 +167,7 @@ export function bfs<TGraph extends Graphable>(
 
     const visited = new Set<ReturnType<TGraph["hash"]>>();
     const queue: Array<ReturnType<TGraph["hash"]>> = [];
+    let queueIdx = 0;
 
     const startVertex = graph.getVertexByHash(startHash);
     if (!startVertex) {
@@ -183,11 +184,8 @@ export function bfs<TGraph extends Graphable>(
     queue.push(startHash);
 
     let found = false;
-    while (queue.length > 0) {
-        // TODO:
-        // O(n) per shift due to array reindexing.
-        // could use index-based queue instead - or a dequeue.
-        const currentHash = queue.shift()!;
+    while (queueIdx < queue.length) {
+        const currentHash = queue[queueIdx++];
         if (currentHash === endHash) {
             found = true;
             break;
