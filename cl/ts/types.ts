@@ -23,11 +23,11 @@ export interface Point3<T = any> extends Comparable<T> {
 
 export type Point<T = any> = Point2<T> | Point3<T>;
 
-export interface Postionable<T extends Point> {
+export interface Positionable<T extends Point> {
     readonly pos: T;
 }
 
-export interface Compressable<T extends Point> {
+export interface Compressible<T extends Point> {
     compress(v: T): T;
     decompress(v: T): T;
 }

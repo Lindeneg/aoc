@@ -1,7 +1,7 @@
-import type {Compressor} from "./types";
+import type {Compressible} from "./types";
 import Vec2 from "./vec2";
 
-class Vec2Compressor implements Compressor<Vec2> {
+class Vec2Compressor implements Compressible<Vec2> {
     #xs: number[];
     #ys: number[];
 
