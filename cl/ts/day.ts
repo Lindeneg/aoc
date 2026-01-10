@@ -1,6 +1,7 @@
 import {performance} from "node:perf_hooks";
 import fs from "fs/promises";
 import pathMod from "path";
+import {hasKey} from "./common";
 import type {Nullable, AnyFn} from "./types";
 
 type Part = Record<"one" | "two" | "isExample", boolean>;
@@ -176,17 +177,13 @@ class Day<T extends SolveFn> {
     }
 
     static #getWant<T>(config: Config<T>) {
-        if (Day.#hasKey(config, "want")) return (<ConfigObj<T>>config).want;
+        if (hasKey(config, "want")) return (<ConfigObj<T>>config).want;
         return config;
     }
 
     static #getPath<T>(config: Config<T>, isExample: boolean) {
-        if (Day.#hasKey(config, "path")) return (<ConfigObj<T>>config).path;
+        if (hasKey(config, "path")) return (<ConfigObj<T>>config).path;
         return DEFAULT_PATH[Number(isExample)];
-    }
-
-    static #hasKey(obj: unknown, key: PropertyKey) {
-        return obj !== null && typeof obj === "object" && key in obj;
     }
 }
 
