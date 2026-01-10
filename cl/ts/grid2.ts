@@ -1,6 +1,6 @@
 import Vec2 from "./vec2";
 import Printable from "./printable";
-import {emptySuccess, failure, success} from "./result";
+import {emptySuccess, failure, success, must} from "./result";
 import type {Result, Coordinates2} from "./types";
 
 export const UP = Object.freeze(new Vec2(0, -1));
@@ -65,10 +65,11 @@ class Grid2<T> extends Printable {
     }
 
     getFromIdx(idx: number): Result<T> {
-        if (idx < 0 || idx >= this.#data.length)
+        if (idx < 0 || idx >= this.#data.length) {
             return failure(
                 `GRID2: invalid index ${idx} on grid data size ${this.#data.length}`
             );
+        }
         return success(this.#data[idx]);
     }
 
@@ -85,10 +86,11 @@ class Grid2<T> extends Printable {
     }
 
     setFromIdx(idx: number, value: T): Result {
-        if (idx < 0 || idx >= this.#data.length)
+        if (idx < 0 || idx >= this.#data.length) {
             return failure(
                 `GRID2: invalid index ${idx} on grid data size ${this.#data.length}`
             );
+        }
         this.#data[idx] = value;
         return emptySuccess();
     }
@@ -157,6 +159,8 @@ class Grid2<T> extends Printable {
     ): void {
         for (const dir of directions) {
             const next = origin.add(dir);
+            // could be out-of-bounds if we're at an edge
+            // and moving away from the center of the grid
             const result = this.getFromVec(next);
             if (result.ok) fn(result.data, next, dir);
         }
@@ -164,9 +168,8 @@ class Grid2<T> extends Printable {
 
     forSome(fn: (val: T, idx: number) => boolean): void {
         for (let i = 0; i < this.size; i++) {
-            const result = this.getFromIdx(i);
-            if (!result.ok) continue;
-            if (fn(result.data, i)) return;
+            // this should never fail, so we use must
+            if (fn(must(this.getFromIdx(i)), i)) return;
         }
     }
 
