@@ -4,6 +4,7 @@ import {
     Vertex,
     VertexGraph,
     bfs,
+    must,
     getSearchResultDistance,
 } from "../../cl";
 
@@ -120,17 +121,20 @@ const day10 = new Day(
                 const startHash = graph.hash(start);
                 const endHash = graph.hash(machine.target);
 
-                graph.addVertex(start);
+                must(graph.addVertex(start));
 
-                const result = bfs(graph, startHash, endHash, (vertex) => {
-                    return machine.buttons.map((button) => {
-                        const next = vertex.data.slice();
-                        for (const idx of button) {
-                            next[idx] = next[idx] === 0 ? 1 : 0;
-                        }
-                        return next;
-                    });
-                });
+                const result = must(
+                    bfs(graph, startHash, endHash, (vertex) => {
+                        // expand function
+                        return machine.buttons.map((button) => {
+                            const next = vertex.data.slice();
+                            for (const idx of button) {
+                                next[idx] = next[idx] === 0 ? 1 : 0;
+                            }
+                            return next;
+                        });
+                    })
+                );
 
                 answer += getSearchResultDistance(result);
             } else {

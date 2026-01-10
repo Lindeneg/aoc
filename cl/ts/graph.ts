@@ -1,5 +1,7 @@
+import {hasKey} from "./common";
 import Printable from "./printable";
-import type {Nullable, Class, AnyObj, Stringable} from "./types";
+import {success, failure} from "./result";
+import type {Nullable, Result, Class, AnyObj, Stringable} from "./types";
 
 export const GRAPH_MODE = {
     DIRECTED: 0,
@@ -65,7 +67,9 @@ export interface Graphable<
 
     getVertex(p: InstanceType<TNode>["data"]): Nullable<InstanceType<TNode>>;
     getVertexByHash(hash: ReturnType<THasher>): Nullable<InstanceType<TNode>>;
-    addVertex(...args: ConstructorParameters<TNode>): InstanceType<TNode>;
+    addVertex(
+        ...args: ConstructorParameters<TNode>
+    ): Result<InstanceType<TNode>>;
     addVertexOverride(
         ...args: ConstructorParameters<TNode>
     ): [
@@ -164,7 +168,7 @@ export function bfs<TGraph extends Graphable>(
     startHash: ReturnType<TGraph["hash"]>,
     endHash: ReturnType<TGraph["hash"]>,
     expand?: ExpandFn<TGraph>
-): GraphSearchResult<ReturnType<TGraph["hash"]>> {
+): Result<GraphSearchResult<ReturnType<TGraph["hash"]>>> {
     const parents = new Map<
         ReturnType<TGraph["hash"]>,
         Nullable<ReturnType<TGraph["hash"]>>
@@ -172,12 +176,12 @@ export function bfs<TGraph extends Graphable>(
 
     if (startHash === endHash) {
         parents.set(startHash, null);
-        return {
+        return success({
             startHash,
             endHash,
             found: true,
             parents,
-        };
+        });
     }
 
     const visited = new Set<ReturnType<TGraph["hash"]>>();
@@ -186,12 +190,12 @@ export function bfs<TGraph extends Graphable>(
 
     const startVertex = graph.getVertexByHash(startHash);
     if (!startVertex) {
-        return {
+        return success({
             startHash,
             endHash,
             found: false,
             parents,
-        };
+        });
     }
 
     visited.add(startHash);
@@ -212,11 +216,7 @@ export function bfs<TGraph extends Graphable>(
                 let data: VertexDataFromGraph<TGraph>;
                 let props: AnyObj = {};
 
-                if (
-                    typeof result === "object" &&
-                    result !== null &&
-                    "data" in result
-                ) {
+                if (hasKey(result, "data")) {
                     ({data, ...props} = result);
                 } else {
                     data = result;
@@ -225,7 +225,13 @@ export function bfs<TGraph extends Graphable>(
 
                 let nextVertex = graph.getVertexByHash(nextHash);
                 if (!nextVertex) {
-                    nextVertex = graph.addVertex(data);
+                    const addedVertexResult = graph.addVertex(data);
+                    if (!addedVertexResult.ok) {
+                        return failure(
+                            `BFS: failed to add vertex ${nextHash} to graph`
+                        );
+                    }
+                    nextVertex = addedVertexResult.data;
                 }
 
                 graph.addEdgeFromVerticies(currentVertex, nextVertex, props);
@@ -242,12 +248,12 @@ export function bfs<TGraph extends Graphable>(
         }
     }
 
-    return {
+    return success({
         startHash,
         endHash,
         found,
         parents,
-    };
+    });
 }
 
 export function getSearchResultDistance<THash>(

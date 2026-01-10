@@ -9,7 +9,8 @@ import {
     type AddEdgeFromDataDefaultParams,
     type AddEdgeFromVerticiesDefaultParams,
 } from "./graph";
-import type {Class, Ctor, Nullable} from "./types";
+import {success, failure} from "./result";
+import type {Result, Class, Ctor, Nullable} from "./types";
 
 /**
  * Generic VertexGraph. It only knows about getting, finding and adding
@@ -57,16 +58,18 @@ class VertexGraph<
         return this.#vertices.get(hash) ?? null;
     }
 
-    addVertex(...args: ConstructorParameters<TNode>): InstanceType<TNode> {
+    addVertex(
+        ...args: ConstructorParameters<TNode>
+    ): Result<InstanceType<TNode>, {hash: ReturnType<THasher>}> {
         const vertex = new this.#Vertex(...args) as InstanceType<TNode>;
         const hash = this.#hasher(vertex.data);
         if (this.#vertices.has(hash)) {
-            throw new Error(
-                "GraphInserstionError: vertex already exist: " + hash
-            );
+            return failure("VERTEX-GRAPH: vertex already exist: " + hash, {
+                hash,
+            });
         }
         this.#vertices.set(hash, vertex);
-        return vertex;
+        return success(vertex);
     }
 
     addVertexOverride(
