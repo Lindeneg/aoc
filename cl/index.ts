@@ -56,3 +56,4 @@ export {
 } from "./ts/graph";
 export {orient2, pointOnSegment2, segmentsIntersect2} from "./ts/geometry";
 export {success, failure, must} from "./ts/result";
+export {hasKey} from "./ts/common";
