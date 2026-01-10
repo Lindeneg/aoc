@@ -1,18 +1,31 @@
 import Vec2 from "./vec2";
 import Rect from "./rect";
+import {success, failure} from "./result";
 import {pointOnSegment2, segmentsIntersect2} from "./geometry";
+import type {Result} from "./types";
 
+type PolygonVertices<T> = [T, T, T, ...T[]];
+
+/**
+ * Polygon utility
+ *
+ * Constructor calling is not allowed, since there exist a state
+ * where a Polygon is considered invalid and thus should not be constructed.
+ * One example is when less than three vertices are provided.
+ *
+ * Instead make use of `Polygon.make`.
+ */
 class Polygon2 {
-    constructor(public readonly vertices: Vec2[]) {
-        if (vertices.length < 3) {
-            throw new Error("Polygon must have at least 3 vertices");
-        }
+    readonly #vertices: PolygonVertices<Vec2>;
+
+    private constructor(vertices: PolygonVertices<Vec2>) {
+        this.#vertices = vertices;
     }
 
     vecOnBoundary(p: Vec2): boolean {
-        for (let i = 0; i < this.vertices.length; i++) {
-            const a = this.vertices[i];
-            const b = this.vertices[(i + 1) % this.vertices.length];
+        for (let i = 0; i < this.#vertices.length; i++) {
+            const a = this.#vertices[i];
+            const b = this.#vertices[(i + 1) % this.#vertices.length];
             if (pointOnSegment2(a, b, p)) return true;
         }
         return false;
@@ -39,9 +52,9 @@ class Polygon2 {
 
         const rEdges = rect.edges();
 
-        for (let i = 0; i < this.vertices.length; i++) {
-            const a = this.vertices[i];
-            const b = this.vertices[(i + 1) % this.vertices.length];
+        for (let i = 0; i < this.#vertices.length; i++) {
+            const a = this.#vertices[i];
+            const b = this.#vertices[(i + 1) % this.#vertices.length];
 
             for (const [c, d] of rEdges) {
                 if (segmentsIntersect2(a, b, c, d)) return false;
@@ -54,14 +67,14 @@ class Polygon2 {
     #vecInPolygon(p: Vec2): boolean {
         let inside = false;
         for (
-            let i = 0, j = this.vertices.length - 1;
-            i < this.vertices.length;
+            let i = 0, j = this.#vertices.length - 1;
+            i < this.#vertices.length;
             j = i++
         ) {
-            const xi = this.vertices[i].x,
-                yi = this.vertices[i].y;
-            const xj = this.vertices[j].x,
-                yj = this.vertices[j].y;
+            const xi = this.#vertices[i].x,
+                yi = this.#vertices[i].y;
+            const xj = this.#vertices[j].x,
+                yj = this.#vertices[j].y;
 
             const intersect =
                 yi > p.y !== yj > p.y &&
@@ -70,6 +83,15 @@ class Polygon2 {
             if (intersect) inside = !inside;
         }
         return inside;
+    }
+
+    static make(vertices: Vec2[]): Result<Polygon2> {
+        if (vertices.length < 3) {
+            return failure(
+                `POLYGON2: vertices must contain three or more elements`
+            );
+        }
+        return success(new Polygon2(vertices as PolygonVertices<Vec2>));
     }
 }
 

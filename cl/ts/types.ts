@@ -32,7 +32,7 @@ export interface Positionable<T extends Point> {
 }
 
 export interface Compressible<T extends Point> {
-    compress(v: T): T;
+    compress(v: T): Result<T>;
     decompress(v: T): T;
 }
 

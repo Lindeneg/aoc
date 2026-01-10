@@ -1,5 +1,5 @@
 import Printable from "./printable";
-import type {Compressible, Point2} from "./types";
+import type {Compressible, Point2, Result} from "./types";
 
 class Vec2 extends Printable implements Point2 {
     public x: number;
@@ -41,11 +41,11 @@ class Vec2 extends Printable implements Point2 {
         return this.shrink(m);
     }
 
-    compress(compressor: Compressible<Vec2>): Vec2 {
+    compress(compressor: Compressible<Vec2>): Result<Vec2> {
         return compressor.compress(this.copy());
     }
 
-    compressMut(compressor: Compressible<Vec2>): Vec2 {
+    compressMut(compressor: Compressible<Vec2>): Result<Vec2> {
         return compressor.compress(this);
     }
 
