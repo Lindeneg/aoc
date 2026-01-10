@@ -21,6 +21,10 @@ export interface Point3<T = any> extends Comparable<T> {
     z: number;
 }
 
+export type Coordinates2 = [x: number, y: number];
+
+export type Coordinates3 = [x: number, y: number, z: number];
+
 export type Point<T = any> = Point2<T> | Point3<T>;
 
 export interface Positionable<T extends Point> {
@@ -43,12 +47,22 @@ export type ResultSuccess<TData> = {
     ok: true;
 };
 
-export type ResultFailure<TErrorCtx extends AnyObj> = {
+export interface ResultFailure {
     msg: string;
-    ctx?: TErrorCtx;
     ok: false;
-};
+}
 
-export type Result<TData, TErrorCtx extends AnyObj = AnyObj> =
+export interface ResultFailureWithCtx<TErrorCtx extends AnyObj>
+    extends ResultFailure {
+    ctx: TErrorCtx;
+}
+
+export type ErrorResult<TErrorCtx extends AnyObj = never> = [
+    TErrorCtx,
+] extends [never]
+    ? ResultFailure
+    : ResultFailureWithCtx<TErrorCtx>;
+
+export type Result<TData = null, TErrorCtx extends AnyObj = never> =
     | ResultSuccess<TData>
-    | ResultFailure<TErrorCtx>;
+    | ErrorResult<TErrorCtx>;
