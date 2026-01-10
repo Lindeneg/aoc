@@ -7,7 +7,7 @@ type Part = Record<"one" | "two" | "isExample", boolean>;
 
 type ConfigObj<T> = {path: string; want: T};
 type Config<T> = Nullable<ConfigObj<T> | T>;
-type DayConfig<T> = T extends Result
+type DayConfig<T> = T extends DayResult
     ? [Config<T["data"]>, Config<T["data"]>]
     : [Config<T>, Config<T>];
 
@@ -137,7 +137,7 @@ class Day<T extends SolveFn> {
         let txt = isExample ? `EXAMPLE ${part}` : `PUZZLE  ${part}`;
         let got = result;
         let ctx = "";
-        if (result instanceof Result) {
+        if (result instanceof DayResult) {
             got = result.data;
             ctx = ` (${result.ctx})`;
         }
