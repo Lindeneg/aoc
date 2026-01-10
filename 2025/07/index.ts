@@ -1,4 +1,4 @@
-import {Day, Grid2, LEFT, RIGHT, type Vec2} from "../../cl";
+import {Day, Grid2, must, LEFT, RIGHT, type Vec2} from "../../cl";
 
 type Grid = Grid2<string>;
 
@@ -12,7 +12,7 @@ const day7 = new Day(
         for (let y = startPos.y + 1; y < grid.height; y++) {
             const next = new Map();
             for (const [x, count] of current.entries()) {
-                const value = grid.getFromCoords(x, y);
+                const value = must(grid.getFromCoords(x, y));
                 if (value === SPLITTER) {
                     const [left, right] = [x + LEFT.x, x + RIGHT.x];
                     if (!grid.outOfBoundsX(left)) incMapEl(next, left, count);
@@ -30,7 +30,9 @@ const day7 = new Day(
     [1662n, 40941112789504n],
     [21n, 40n]
 ).setPostTransform((transformed) => {
-    const grid = Grid2.fromNested<string>(transformed.map((e) => e.split("")));
+    const grid = must(
+        Grid2.fromNested<string>(transformed.map((e) => e.split("")))
+    );
     const startPosIdx = grid.findOne((cur) => cur === START);
     return [grid, grid.idxToVec(startPosIdx)];
 });

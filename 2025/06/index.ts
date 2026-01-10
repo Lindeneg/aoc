@@ -1,4 +1,4 @@
-import {Day, Grid2} from "../../cl";
+import {Day, Grid2, must} from "../../cl";
 
 type Grid = Grid2<string>;
 
@@ -26,12 +26,19 @@ const day6 = new Day(
     [4277556, 3263827]
 ).setPostTransform((transformed) => {
     return [
-        Grid2.fromNested(
-            transformed
-                .map((e) => e.split(" "))
-                .map((e) => e.filter((ee) => !!ee))
+        must(
+            Grid2.fromNested(
+                transformed
+                    .map((e) => e.split(" "))
+                    .map((e) => e.filter((ee) => !!ee))
+            )
         ),
-        Grid2.fromNested(transformed.map((e) => e.split(""))),
+        must(
+            Grid2.fromNestedWithPadding(
+                transformed.map((e) => e.split("")),
+                " "
+            )
+        ),
     ];
 });
 
@@ -65,7 +72,7 @@ function part1(grid: Grid) {
     for (let col = 0; col < grid.width; col++) {
         const calculation = makeCalculation();
         for (let row = 0; row < grid.height; row++) {
-            const value = grid.getFromCoords(col, row);
+            const value = must(grid.getFromCoords(col, row));
             if (value in OPERATIONS) {
                 calculation.operation =
                     OPERATIONS[value as keyof typeof OPERATIONS];
@@ -85,7 +92,7 @@ function part2(grid: Grid) {
     for (let offset = 1; offset < grid.width + 1; offset++) {
         let emptyRows = 0;
         for (let row = 0; row < grid.height; row++) {
-            let value = grid.getFromCoords(grid.width - offset, row);
+            let value = must(grid.getFromCoords(grid.width - offset, row));
             if (!value) continue;
             value = value.trim();
             if (!value) {

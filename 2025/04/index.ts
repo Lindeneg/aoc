@@ -1,4 +1,4 @@
-import {Day, Grid2} from "../../cl";
+import {Day, Grid2, must} from "../../cl";
 
 type Grid = Grid2<string>;
 
@@ -39,7 +39,7 @@ const day4 = new Day(
     [1480, 8899],
     [13, 43]
 ).setPostTransform((transformed) => {
-    return Grid2.fromNested(transformed.map((e) => e.split("")));
+    return must(Grid2.fromNested(transformed.map((e) => e.split(""))));
 });
 
 function adjacentCount(grid: Grid, originIdx: number) {
