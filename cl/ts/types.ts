@@ -1,3 +1,6 @@
+// TODO remove this import
+import type {Result} from "./result";
+
 export type AnyFn = (...args: any) => any;
 
 export interface Stringable {
@@ -41,28 +44,3 @@ export type AnyObj = Record<PropertyKey, unknown>;
 export type Ctor<C extends abstract new (...args: any) => any> = C;
 
 export type Class<T> = new (...args: any) => T;
-
-export type ResultSuccess<TData> = {
-    data: TData;
-    ok: true;
-};
-
-export interface ResultFailure {
-    msg: string;
-    ok: false;
-}
-
-export interface ResultFailureWithCtx<TErrorCtx extends AnyObj>
-    extends ResultFailure {
-    ctx: TErrorCtx;
-}
-
-export type ErrorResult<TErrorCtx extends AnyObj = never> = [
-    TErrorCtx,
-] extends [never]
-    ? ResultFailure
-    : ResultFailureWithCtx<TErrorCtx>;
-
-export type Result<TData = null, TErrorCtx extends AnyObj = never> =
-    | ResultSuccess<TData>
-    | ErrorResult<TErrorCtx>;

@@ -1,6 +1,6 @@
 import Vec2 from "./vec2";
-import {success, failure} from "./result";
-import type {Compressible, Result} from "./types";
+import {success, failure, type Result} from "./result";
+import type {Compressible} from "./types";
 
 class Vec2Compressor implements Compressible<Vec2> {
     #xs: number[];

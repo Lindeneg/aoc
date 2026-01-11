@@ -1,8 +1,7 @@
 import Vec2 from "./vec2";
 import Rect from "./rect";
-import {success, failure} from "./result";
+import {success, failure, type Result} from "./result";
 import {pointOnSegment2, segmentsIntersect2} from "./geometry";
-import type {Result} from "./types";
 
 type PolygonVertices<T> = [T, T, T, ...T[]];
 

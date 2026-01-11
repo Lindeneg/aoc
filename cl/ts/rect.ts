@@ -1,6 +1,6 @@
 import Vec2 from "./vec2";
-import {success, failure} from "./result";
-import type {Result, Compressible} from "./types";
+import {success, failure, type Result} from "./result";
+import type {Compressible} from "./types";
 
 class Rect {
     public readonly topLeft: Vec2;

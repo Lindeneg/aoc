@@ -1,4 +1,31 @@
-import type {AnyObj, ErrorResult, Result, ResultSuccess} from "./types";
+// TODO reuse AnyObj from types.ts
+// maybe move the result types in there
+export type AnyObj = Record<PropertyKey, unknown>;
+
+export type ResultSuccess<TData> = {
+    data: TData;
+    ok: true;
+};
+
+export interface ResultFailure {
+    msg: string;
+    ok: false;
+}
+
+export interface ResultFailureWithCtx<TErrorCtx extends AnyObj>
+    extends ResultFailure {
+    ctx: TErrorCtx;
+}
+
+export type ErrorResult<TErrorCtx extends AnyObj = never> = [
+    TErrorCtx,
+] extends [never]
+    ? ResultFailure
+    : ResultFailureWithCtx<TErrorCtx>;
+
+export type Result<TData = null, TErrorCtx extends AnyObj = never> =
+    | ResultSuccess<TData>
+    | ErrorResult<TErrorCtx>;
 
 export function success<TData>(data: TData): ResultSuccess<TData> {
     return {data, ok: true};
@@ -17,7 +44,7 @@ export function failure<TCtx extends AnyObj = never>(
     return {msg, ctx, ok: false} as ErrorResult<TCtx>;
 }
 
-export function must<T extends Result<any>>(
+export function unwrap<T extends Result<any>>(
     r: T
 ): [T] extends [Result<infer TData>] ? TData : never {
     if (!r.ok) throw new Error(r.msg);

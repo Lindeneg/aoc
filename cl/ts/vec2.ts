@@ -1,5 +1,6 @@
 import Printable from "./printable";
-import type {Compressible, Point2, Result} from "./types";
+import type {Result} from "./result";
+import type {Compressible, Point2} from "./types";
 
 class Vec2 extends Printable implements Point2 {
     public x: number;

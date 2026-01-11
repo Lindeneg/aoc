@@ -1,4 +1,5 @@
 import Printable from "./printable";
+import {success, failure, type Result} from "./result";
 import type {Stringable} from "./types";
 
 export const UF_MODE = {
@@ -9,9 +10,9 @@ export const UF_MODE = {
 export type UfMode = (typeof UF_MODE)[keyof typeof UF_MODE];
 
 export interface Uf<T = any> {
-    find(x: T): T;
-    findNonCompress(x: T): T;
-    merge(x: T, y: T): number;
+    find(x: T): Result<T>;
+    findNonCompress(x: T): Result<T>;
+    merge(x: T, y: T): Result<number>;
     sizes(): number[];
 }
 
@@ -36,29 +37,62 @@ export class UfObjectKeyed<T extends Stringable>
         this.#size.set(x, 1);
     }
 
-    find(x: T) {
-        const parent = this.#parent.get(x)!;
-        if (parent === x) return x;
-        const closerParent: T = this.find(parent);
+    find(x: T): Result<T> {
+        const parent = this.#parent.get(x);
+        if (parent === undefined) {
+            return failure(
+                `UF-OBJECT-KEYED: element ${x} not found in union-find structure`
+            );
+        }
+        if (parent === x) return success(x);
+        const closerParentResult = this.find(parent);
+        if (!closerParentResult.ok) return closerParentResult;
+        const closerParent = closerParentResult.data;
         // compress path to root
         this.#parent.set(x, closerParent);
-        return closerParent;
+        return success(closerParent);
     }
 
-    findNonCompress(x: T) {
+    findNonCompress(x: T): Result<T> {
+        if (!this.#parent.has(x)) {
+            return failure(
+                `UF-OBJECT-KEYED: element ${x} not found in union-find structure`
+            );
+        }
         let current = x;
         let parent = this.#parent.get(current);
         while (parent !== undefined && parent !== current) {
             current = parent;
             parent = this.#parent.get(current);
         }
-        return current;
+        return success(current);
     }
 
-    merge(x: T, y: T) {
-        const [xRoot, yRoot] = [this.find(x), this.find(y)];
-        if (xRoot === yRoot) return this.#size.get(xRoot)!;
-        const [xSize, ySize] = [this.#size.get(xRoot)!, this.#size.get(yRoot)!];
+    merge(x: T, y: T): Result<number> {
+        const xRootResult = this.find(x);
+        if (!xRootResult.ok) return xRootResult;
+        const yRootResult = this.find(y);
+        if (!yRootResult.ok) return yRootResult;
+
+        const xRoot = xRootResult.data;
+        const yRoot = yRootResult.data;
+
+        if (xRoot === yRoot) {
+            const size = this.#size.get(xRoot);
+            if (size === undefined) {
+                return failure(
+                    `UF-OBJECT-KEYED: size not found for root ${xRoot}`
+                );
+            }
+            return success(size);
+        }
+
+        const xSize = this.#size.get(xRoot);
+        const ySize = this.#size.get(yRoot);
+        if (xSize === undefined || ySize === undefined) {
+            return failure(`UF-OBJECT-KEYED: size not found for roots`);
+        }
+
         let [bigger, smaller] = [xRoot, yRoot];
         if (xSize < ySize) {
             [bigger, smaller] = [yRoot, xRoot];
@@ -67,7 +101,7 @@ export class UfObjectKeyed<T extends Stringable>
         this.#parent.set(smaller, bigger);
         this.#size.set(bigger, newSize);
         this.#size.delete(smaller);
-        return newSize;
+        return success(newSize);
     }
 
     sizes() {
@@ -78,7 +112,9 @@ export class UfObjectKeyed<T extends Stringable>
         const groups = new Map<T, Stringable[]>();
 
         for (const parent of this.#parent.keys()) {
-            const root = this.findNonCompress(parent);
+            const rootResult = this.findNonCompress(parent);
+            if (!rootResult.ok) continue;
+            const root = rootResult.data;
             if (!groups.has(root)) groups.set(root, []);
             groups.get(root)!.push(parent);
         }
@@ -86,9 +122,8 @@ export class UfObjectKeyed<T extends Stringable>
         return [...groups.entries()]
             .sort(([, a], [, b]) => b.length - a.length)
             .reduce((acc, [root, members]) => {
-                acc += `ROOT size:${members.length}=${this.#size.get(
-                    root
-                )!}, root:${root}\n`;
+                const size = this.#size.get(root) ?? 0;
+                acc += `ROOT size:${members.length}=${size}, root:${root}\n`;
                 if (members.length > 1) {
                     for (const m of members) {
                         acc += `  ${m}\n`;
@@ -100,7 +135,7 @@ export class UfObjectKeyed<T extends Stringable>
 }
 
 // i just wanna see how much better this performs
-export class UfBitPacked extends Printable {
+export class UfBitPacked extends Printable implements Uf<number> {
     // if negative n, then node is root and size is -n
     // if positive n, then node belongs to root at index n
     #parent: Int32Array;
@@ -115,7 +150,12 @@ export class UfBitPacked extends Printable {
             typeof getEl === "function" ? getEl : (idx: number) => idx;
     }
 
-    find(x: number) {
+    find(x: number): Result<number> {
+        if (x < 0 || x >= this.#parent.length) {
+            return failure(
+                `UF-BIT-PACKED: index ${x} out of bounds [0, ${this.#parent.length})`
+            );
+        }
         let root = x;
         while (this.#parent[root] >= 0) {
             root = this.#parent[root];
@@ -126,22 +166,32 @@ export class UfBitPacked extends Printable {
             this.#parent[x] = root;
             x = p;
         }
-        return root;
+        return success(root);
     }
 
-    findNonCompress(x: number) {
+    findNonCompress(x: number): Result<number> {
+        if (x < 0 || x >= this.#parent.length) {
+            return failure(
+                `UF-BIT-PACKED: index ${x} out of bounds [0, ${this.#parent.length})`
+            );
+        }
         let root = x;
         while (this.#parent[root] >= 0) {
             root = this.#parent[root];
         }
-        return root;
+        return success(root);
     }
 
-    merge(a: number, b: number) {
-        let rootA = this.find(a);
-        let rootB = this.find(b);
+    merge(a: number, b: number): Result<number> {
+        const rootAResult = this.find(a);
+        if (!rootAResult.ok) return rootAResult;
+        const rootBResult = this.find(b);
+        if (!rootBResult.ok) return rootBResult;
 
-        if (rootA === rootB) return -this.#parent[rootA];
+        let rootA = rootAResult.data;
+        let rootB = rootBResult.data;
+
+        if (rootA === rootB) return success(-this.#parent[rootA]);
 
         if (this.#parent[rootA] > this.#parent[rootB]) {
             [rootA, rootB] = [rootB, rootA];
@@ -150,7 +200,7 @@ export class UfBitPacked extends Printable {
         this.#parent[rootA] += this.#parent[rootB];
         this.#parent[rootB] = rootA;
 
-        return -this.#parent[rootA];
+        return success(-this.#parent[rootA]);
     }
 
     sizes() {
@@ -167,7 +217,9 @@ export class UfBitPacked extends Printable {
         const groups = new Map<number, Stringable[]>();
 
         for (let i = 0; i < this.#parent.length; i++) {
-            const root = this.findNonCompress(i);
+            const rootResult = this.findNonCompress(i);
+            if (!rootResult.ok) continue;
+            const root = rootResult.data;
             if (!groups.has(root)) groups.set(root, []);
             groups.get(root)!.push(this.#getEl(i));
         }

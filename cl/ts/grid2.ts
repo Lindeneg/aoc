@@ -1,7 +1,7 @@
 import Vec2 from "./vec2";
 import Printable from "./printable";
-import {emptySuccess, failure, success, must} from "./result";
-import type {Result, Coordinates2} from "./types";
+import {emptySuccess, failure, success, unwrap, type Result} from "./result";
+import type {Coordinates2} from "./types";
 
 export const UP = Object.freeze(new Vec2(0, -1));
 export const RIGHT = Object.freeze(new Vec2(1, 0));
@@ -168,8 +168,8 @@ class Grid2<T> extends Printable {
 
     forSome(fn: (val: T, idx: number) => boolean): void {
         for (let i = 0; i < this.size; i++) {
-            // this should never fail, so we use must
-            if (fn(must(this.getFromIdx(i)), i)) return;
+            // this should never fail, so we use unwrap
+            if (fn(unwrap(this.getFromIdx(i)), i)) return;
         }
     }
 

@@ -1,7 +1,7 @@
 import {hasKey} from "./common";
 import Printable from "./printable";
-import {success, failure} from "./result";
-import type {Nullable, Result, Class, AnyObj, Stringable} from "./types";
+import {success, failure, type Result} from "./result";
+import type {Nullable, Class, AnyObj, Stringable} from "./types";
 
 export const GRAPH_MODE = {
     DIRECTED: 0,
@@ -72,24 +72,26 @@ export interface Graphable<
     ): Result<InstanceType<TNode>>;
     addVertexOverride(
         ...args: ConstructorParameters<TNode>
-    ): [
-        newVertex: InstanceType<TNode>,
-        oldVertex: Nullable<InstanceType<TNode>>,
-    ];
+    ): Result<
+        [
+            newVertex: InstanceType<TNode>,
+            oldVertex: Nullable<InstanceType<TNode>>,
+        ]
+    >;
 
     addEdgeFromVerticies(
         ...[v0, v1, props]: AddEdgeParams<
             TNode,
             AddEdgeFromVerticiesDefaultParams<TNode>
         >
-    ): void;
+    ): Result;
 
     addEdgeFromData(
         ...[p0, p1, props]: AddEdgeParams<
             TNode,
             AddEdgeFromDataDefaultParams<TNode>
         >
-    ): boolean;
+    ): Result;
 }
 
 // Abstract Vertex implementation based on Nodeable.
@@ -212,35 +214,71 @@ export function bfs<TGraph extends Graphable>(
         const currentVertex = graph.getVertexByHash(currentHash)!;
 
         if (typeof expand === "function") {
-            for (const result of expand(currentVertex)) {
-                let data: VertexDataFromGraph<TGraph>;
-                let props: AnyObj = {};
+            try {
+                for (const result of expand(currentVertex)) {
+                    let data: VertexDataFromGraph<TGraph>;
+                    let props: AnyObj = {};
 
-                if (hasKey(result, "data")) {
-                    ({data, ...props} = result);
-                } else {
-                    data = result;
-                }
-                const nextHash = graph.hash(data);
+                    if (hasKey(result, "data")) {
+                        ({data, ...props} = result);
+                    } else {
+                        data = result;
+                    }
 
-                let nextVertex = graph.getVertexByHash(nextHash);
-                if (!nextVertex) {
-                    const addedVertexResult = graph.addVertex(data);
-                    if (!addedVertexResult.ok) {
+                    let nextHash: ReturnType<TGraph["hash"]>;
+                    try {
+                        nextHash = graph.hash(data);
+                    } catch (e) {
                         return failure(
-                            `BFS: failed to add vertex ${nextHash} to graph`
+                            `BFS: hasher function threw exception: ${
+                                e instanceof Error ? e.message : String(e)
+                            }`
                         );
                     }
-                    nextVertex = addedVertexResult.data;
-                }
 
-                graph.addEdgeFromVerticies(currentVertex, nextVertex, props);
+                    let nextVertex = graph.getVertexByHash(nextHash);
+                    if (!nextVertex) {
+                        const addedVertexResult = graph.addVertex(data);
+                        if (!addedVertexResult.ok) {
+                            return failure(
+                                `BFS: failed to add vertex ${nextHash} to graph: ${addedVertexResult.msg}`
+                            );
+                        }
+                        nextVertex = addedVertexResult.data;
+                    }
+
+                    const edgeResult = graph.addEdgeFromVerticies(
+                        currentVertex,
+                        nextVertex,
+                        props
+                    );
+                    if (!edgeResult.ok) {
+                        return failure(
+                            `BFS: failed to add edge from ${currentHash} to ${nextHash}: ${edgeResult.msg}`
+                        );
+                    }
+                }
+            } catch (e) {
+                return failure(
+                    `BFS: expand function threw exception: ${
+                        e instanceof Error ? e.message : String(e)
+                    }`
+                );
             }
         }
 
         for (const edge of currentVertex.edges) {
             const neighbor = edge.next;
-            const neighborHash = graph.hash(neighbor.data);
+            let neighborHash: ReturnType<TGraph["hash"]>;
+            try {
+                neighborHash = graph.hash(neighbor.data);
+            } catch (e) {
+                return failure(
+                    `BFS: hasher function threw exception while processing edges: ${
+                        e instanceof Error ? e.message : String(e)
+                    }`
+                );
+            }
             if (visited.has(neighborHash)) continue;
             visited.add(neighborHash);
             parents.set(neighborHash, currentHash);

@@ -9,8 +9,8 @@ import {
     type AddEdgeFromDataDefaultParams,
     type AddEdgeFromVerticiesDefaultParams,
 } from "./graph";
-import {success, failure} from "./result";
-import type {Result, Class, Ctor, Nullable} from "./types";
+import {success, failure, emptySuccess, type Result} from "./result";
+import type {Class, Ctor, Nullable} from "./types";
 
 /**
  * Generic VertexGraph. It only knows about getting, finding and adding
@@ -50,8 +50,13 @@ class VertexGraph<
     }
 
     getVertex(p: InstanceType<TNode>["data"]): Nullable<InstanceType<TNode>> {
-        const hash = this.#hasher(p);
-        return this.#vertices.get(hash) ?? null;
+        try {
+            const hash = this.#hasher(p);
+            return this.#vertices.get(hash) ?? null;
+        } catch (e) {
+            // If hasher throws, we can't find the vertex
+            return null;
+        }
     }
 
     getVertexByHash(hash: ReturnType<THasher>): Nullable<InstanceType<TNode>> {
@@ -60,46 +65,93 @@ class VertexGraph<
 
     addVertex(
         ...args: ConstructorParameters<TNode>
-    ): Result<InstanceType<TNode>, {hash: ReturnType<THasher>}> {
-        const vertex = new this.#Vertex(...args) as InstanceType<TNode>;
-        const hash = this.#hasher(vertex.data);
-        if (this.#vertices.has(hash)) {
-            return failure("VERTEX-GRAPH: vertex already exist: " + hash, {
-                hash,
-            });
+    ): Result<InstanceType<TNode>, {hash?: ReturnType<THasher>}> {
+        try {
+            const vertex = new this.#Vertex(...args) as InstanceType<TNode>;
+            try {
+                const hash = this.#hasher(vertex.data);
+                if (this.#vertices.has(hash)) {
+                    return failure(
+                        "VERTEX-GRAPH: vertex already exist: " + hash,
+                        {
+                            hash,
+                        }
+                    );
+                }
+                this.#vertices.set(hash, vertex);
+                return success(vertex);
+            } catch (e) {
+                return failure(
+                    `VERTEX-GRAPH: hasher function threw exception: ${
+                        e instanceof Error ? e.message : String(e)
+                    }`,
+                    {}
+                );
+            }
+        } catch (e) {
+            return failure(
+                `VERTEX-GRAPH: failed to construct vertex: ${
+                    e instanceof Error ? e.message : String(e)
+                }`,
+                {}
+            );
         }
-        this.#vertices.set(hash, vertex);
-        return success(vertex);
     }
 
     addVertexOverride(
         ...args: ConstructorParameters<TNode>
-    ): [
-        newVertex: InstanceType<TNode>,
-        oldVertex: Nullable<InstanceType<TNode>>,
-    ] {
-        const vertex = new this.#Vertex(...args) as InstanceType<TNode>;
-        const hash = this.#hasher(vertex.data);
-        let old: Nullable<InstanceType<TNode>> = null;
-        if (this.#vertices.has(hash)) {
-            // TODO: remove old edge connections
-            old = this.#vertices.get(hash)!;
+    ): Result<
+        [
+            newVertex: InstanceType<TNode>,
+            oldVertex: Nullable<InstanceType<TNode>>,
+        ]
+    > {
+        try {
+            const vertex = new this.#Vertex(...args) as InstanceType<TNode>;
+            try {
+                const hash = this.#hasher(vertex.data);
+                let old: Nullable<InstanceType<TNode>> = null;
+                if (this.#vertices.has(hash)) {
+                    // TODO: remove old edge connections
+                    old = this.#vertices.get(hash)!;
+                }
+                this.#vertices.set(hash, vertex);
+                return success([vertex, old]);
+            } catch (e) {
+                return failure(
+                    `VERTEX-GRAPH: hasher function threw exception: ${
+                        e instanceof Error ? e.message : String(e)
+                    }`
+                );
+            }
+        } catch (e) {
+            return failure(
+                `VERTEX-GRAPH: failed to construct vertex: ${
+                    e instanceof Error ? e.message : String(e)
+                }`
+            );
         }
-        this.#vertices.set(hash, vertex);
-        return [vertex, old];
     }
 
-    // TODO what if the edge already exists?
     addEdgeFromVerticies(
         ...[v0, v1, props]: AddEdgeParams<
             TNode,
             AddEdgeFromVerticiesDefaultParams<TNode>
         >
-    ) {
-        const p = props || {};
-        v0.edges.push({next: v1, ...p});
-        if (this.#mode === GRAPH_MODE.UNDIRECTED) {
-            v1.edges.push({next: v0, ...p});
+    ): Result {
+        try {
+            const p = props || {};
+            v0.edges.push({next: v1, ...p});
+            if (this.#mode === GRAPH_MODE.UNDIRECTED) {
+                v1.edges.push({next: v0, ...p});
+            }
+            return emptySuccess();
+        } catch (e) {
+            return failure(
+                `VERTEX-GRAPH: failed to add edge: ${
+                    e instanceof Error ? e.message : String(e)
+                }`
+            );
         }
     }
 
@@ -108,17 +160,20 @@ class VertexGraph<
             TNode,
             AddEdgeFromDataDefaultParams<TNode>
         >
-    ): boolean {
+    ): Result {
         const v0 = this.getVertex(p0);
-        if (!v0) return false;
+        if (!v0) {
+            return failure(`VERTEX-GRAPH: vertex not found for data: ${p0}`);
+        }
         const v1 = this.getVertex(p1);
-        if (!v1) return false;
+        if (!v1) {
+            return failure(`VERTEX-GRAPH: vertex not found for data: ${p1}`);
+        }
         const args = [v0, v1, props] as AddEdgeParams<
             TNode,
             AddEdgeFromDataDefaultParams<TNode>
         >;
-        this.addEdgeFromVerticies(...args);
-        return true;
+        return this.addEdgeFromVerticies(...args);
     }
 
     toString(): string {
