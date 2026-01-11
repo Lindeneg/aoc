@@ -1,16 +1,16 @@
 import {performance} from "node:perf_hooks";
 import fs from "fs/promises";
 import pathMod from "path";
+import Printable from "./printable";
 import {hasKey} from "./common";
+import {success, failure, type Result} from "./result";
 import type {Nullable, AnyFn} from "./types";
 
 type Part = Record<"one" | "two" | "isExample", boolean>;
 
 type ConfigObj<T> = {path: string; want: T};
 type Config<T> = Nullable<ConfigObj<T> | T>;
-type DayConfig<T> = T extends DayResult
-    ? [Config<T["data"]>, Config<T["data"]>]
-    : [Config<T>, Config<T>];
+type DayConfig<T> = [Config<T>, Config<T>];
 
 type CtxFromParams<T extends AnyFn> = Parameters<T> extends [
     any,
@@ -40,25 +40,87 @@ type PostTransformFn<T extends AnyFn> = PostTransform<
     CtxFromParams<T>
 >;
 
+type SolveResultObj<T> = {
+    year: number;
+    day: number;
+    timing: number;
+    path: string;
+    ctx: string;
+    part: Part;
+    got: T;
+    want: T;
+};
+
+// regardless of success state,
+// SolveResult always contains
+// a full object, as we have the
+// same information available in either case
+type SolveResult<T> = Result<
+    // succcess state
+    SolveResultObj<T>,
+    // failure state
+    SolveResultObj<T>
+>;
+
+class SolveResults<T> extends Printable {
+    readonly #results: SolveResult<T>[];
+
+    constructor(results: SolveResult<T>[]) {
+        super();
+        this.#results = results;
+    }
+
+    get results(): readonly SolveResult<T>[] {
+        return this.#results;
+    }
+
+    toString(): string {
+        let s = "";
+        for (let i = 0; i < this.#results.length; i++) {
+            const result = this.#results[i];
+            let msg = "";
+            if (result.ok) {
+                msg = `${GREEN}PASS${RESET} ${this.#makePartTxt(
+                    result.data.part
+                )}: ${result.data.got} (${
+                    result.data.timing.toFixed(3) + "ms"
+                })${result.data.ctx}`;
+            } else {
+                msg = `${RED}FAIL${RESET} ${this.#makePartTxt(
+                    result.ctx.part
+                )}: got=${result.ctx.got} want=${result.ctx.want}${
+                    result.ctx.ctx
+                }`;
+            }
+            s += msg;
+            if (i < this.#results.length - 1) {
+                s += "\n";
+            }
+        }
+        return s;
+    }
+
+    #makePartTxt(part: Part) {
+        const partNum = part.one ? 1 : 2;
+        return part.isExample ? `EXAMPLE ${partNum}` : `PUZZLE  ${partNum}`;
+    }
+}
+
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";
 const RESET = "\x1b[0m";
 
+// TODO maybe get this another way
+// or use it as it is but do validation
 const ROOT_PATH = process.argv[2] as string;
+const [YEAR, DAY] = ROOT_PATH.split("/")
+    .slice(-2)
+    .map((e) => +e);
 
+// when `aoc` script is used, these paths are always created
+// by default, however consumer can provide custom paths
+// on a per-solve basis by using the DayConfig type.
 const DEFAULT_PATH = ["puzzle.in", "example.in"] as const;
-
-// just to make it easier if the solve function
-// wants to return some extra context for logging
-export class DayResult<TData = any> {
-    data: TData;
-    ctx: unknown;
-
-    constructor(data: TData, ctx: unknown) {
-        this.data = data;
-        this.ctx = ctx;
-    }
-}
 
 class Day<T extends SolveFn> {
     #fn: T;
@@ -67,6 +129,7 @@ class Day<T extends SolveFn> {
     #split: RegExp | string;
     #transform: Transform;
     #postTransform: Nullable<PostTransformFn<T>>;
+    #ctx: Nullable<string>;
 
     constructor(
         fn: T,
@@ -80,6 +143,7 @@ class Day<T extends SolveFn> {
 
         this.#transform = Day.#defaultTransform;
         this.#postTransform = null;
+        this.#ctx = null;
     }
 
     setTransform(fn: Transform) {
@@ -97,14 +161,35 @@ class Day<T extends SolveFn> {
         return this;
     }
 
-    async solve(part: number = 0, ...args: CtxFromParams<T>) {
-        return this.#evaluateParts(this.#puzzles, part, false, ...args);
+    setCtx(s: Nullable<string>) {
+        this.#ctx = s;
+        return this;
     }
 
-    async examples(part: number = 0, ...args: CtxFromParams<T>) {
+    async solve(
+        part: number = 0,
+        ...args: CtxFromParams<T>
+    ): Promise<SolveResults<ReturnType<T>>> {
+        return new SolveResults(
+            await this.#evaluateParts(this.#puzzles, part, false, ...args)
+        );
+    }
+
+    async examples(
+        part: number = 0,
+        ...args: CtxFromParams<T>
+    ): Promise<SolveResults<ReturnType<T>>> {
+        const results: SolveResult<ReturnType<T>>[] = [];
         for (const example of this.#examples) {
-            await this.#evaluateParts(example, part, true, ...args);
+            const evalResult = await this.#evaluateParts(
+                example,
+                part,
+                true,
+                ...args
+            );
+            results.push(...evalResult);
         }
+        return new SolveResults(results);
     }
 
     async #evaluateParts(
@@ -112,13 +197,15 @@ class Day<T extends SolveFn> {
         part: number,
         isExample: boolean = false,
         ...args: CtxFromParams<T>
-    ) {
+    ): Promise<SolveResult<ReturnType<T>>[]> {
+        const results: SolveResult<ReturnType<T>>[] = [];
         if (Day.#isTarget(part, 1)) {
-            await this.#evaluate(part1, 1, isExample, ...args);
+            results.push(await this.#evaluate(part1, 1, isExample, ...args));
         }
         if (Day.#isTarget(part, 2)) {
-            await this.#evaluate(part2, 2, isExample, ...args);
+            results.push(await this.#evaluate(part2, 2, isExample, ...args));
         }
+        return results;
     }
 
     async #evaluate(
@@ -126,32 +213,33 @@ class Day<T extends SolveFn> {
         part: number,
         isExample: boolean,
         ...args: CtxFromParams<T>
-    ) {
-        const p = Day.#getPath(config, isExample);
-        const want = Day.#getWant(config);
-        const partObj = Day.#makePart(part, isExample);
-        const input = await this.#readInput(p, partObj, ...args);
+    ): Promise<SolveResult<ReturnType<T>>> {
+        const solved: SolveResultObj<any> = {
+            year: YEAR,
+            day: DAY,
+            timing: 0,
+            path: Day.#getPath(config, isExample),
+            ctx: this.#ctx ? ` (${this.#ctx})` : "",
+            part: Day.#makePart(part, isExample),
+            got: undefined,
+            want: Day.#getWant(config),
+        };
+
+        const input = await this.#readInput(solved.path, solved.part, ...args);
+
         const start = performance.now();
-        const result = await this.#fn(partObj, input, ...args);
-        const timing = (performance.now() - start).toFixed(3) + "ms";
-
-        let txt = isExample ? `EXAMPLE ${part}` : `PUZZLE  ${part}`;
-        let got = result;
-        let ctx = "";
-        if (result instanceof DayResult) {
-            got = result.data;
-            ctx = ` (${result.ctx})`;
+        try {
+            solved.got = await this.#fn(solved.part, input, ...args);
+            solved.timing = performance.now() - start;
+        } catch (err) {
+            return failure("DAY: failed to read input", solved);
         }
 
-        if (got !== want) {
-            console.log(
-                `${RED}FAIL${RESET} ${txt}: got=${got} want=${want}${ctx}`
-            );
-        } else {
-            console.log(
-                `${GREEN}PASS${RESET} ${txt}: ${got} (${timing})${ctx}`
-            );
+        if (solved.got !== solved.want) {
+            return failure("DAY: solve returned unexpected value", solved);
         }
+
+        return success(solved);
     }
 
     async #readInput(path: string, part: Part, ...args: CtxFromParams<T>) {
