@@ -36,6 +36,6 @@ const day1 = new Day(
 );
 
 (async () => {
-    await day1.examples(0, 50);
-    await day1.solve(0, 50);
+    console.log(await day1.examples(0, 50));
+    console.log(await day1.solve(0, 50));
 })();

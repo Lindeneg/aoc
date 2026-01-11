@@ -77,6 +77,6 @@ function freshIdsFromRangeCount(buf: Input) {
 }
 
 (async () => {
-    await day5.examples();
-    await day5.solve();
+    console.log(await day5.examples());
+    console.log(await day5.solve());
 })();

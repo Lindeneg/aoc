@@ -4,7 +4,7 @@ import {
     Vertex,
     VertexGraph,
     bfs,
-    must,
+    unwrap,
     getSearchResultDistance,
 } from "../../cl";
 
@@ -121,9 +121,9 @@ const day10 = new Day(
                 const startHash = graph.hash(start);
                 const endHash = graph.hash(machine.target);
 
-                must(graph.addVertex(start));
+                unwrap(graph.addVertex(start));
 
-                const result = must(
+                const result = unwrap(
                     bfs(graph, startHash, endHash, (vertex) => {
                         // expand function
                         return machine.buttons.map((button) => {
@@ -169,6 +169,6 @@ const day10 = new Day(
 });
 
 (async () => {
-    await day10.examples();
-    await day10.solve();
+    console.log(await day10.examples());
+    console.log(await day10.solve());
 })();

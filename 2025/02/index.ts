@@ -54,6 +54,6 @@ function hasReapeatingGteTwice(t: string[]) {
 }
 
 (async () => {
-    await day2.examples();
-    await day2.solve();
+    console.log(await day2.examples());
+    console.log(await day2.solve());
 })();

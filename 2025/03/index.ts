@@ -40,6 +40,6 @@ function makeLargestDigit(s: string, numOfDigits: number) {
 }
 
 (async () => {
-    await day3.examples();
-    await day3.solve();
+    console.log(await day3.examples());
+    console.log(await day3.solve());
 })();
