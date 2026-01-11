@@ -225,14 +225,23 @@ class Day<T extends SolveFn> {
             want: Day.#getWant(config),
         };
 
-        const input = await this.#readInput(solved.path, solved.part, ...args);
+        const inputResult = await this.#readInput(
+            solved.path,
+            solved.part,
+            ...args
+        );
+        if (!inputResult.ok) {
+            solved.ctx = ` (${inputResult.msg})`;
+            return failure("failed to read input", solved);
+        }
+        const input = inputResult.data;
 
         const start = performance.now();
         try {
             solved.got = await this.#fn(solved.part, input, ...args);
             solved.timing = performance.now() - start;
         } catch (err) {
-            return failure("DAY: failed to read input", solved);
+            return failure("DAY: solve function threw exception", solved);
         }
 
         if (solved.got !== solved.want) {
@@ -242,14 +251,22 @@ class Day<T extends SolveFn> {
         return success(solved);
     }
 
-    async #readInput(path: string, part: Part, ...args: CtxFromParams<T>) {
-        const absPath = pathMod.join(ROOT_PATH, path);
-        const buf = await fs.readFile(absPath);
-        let transformed = this.#transform(buf, this.#split, part);
-        if (typeof this.#postTransform === "function") {
-            transformed = this.#postTransform(transformed, part, ...args);
+    async #readInput(
+        path: string,
+        part: Part,
+        ...args: CtxFromParams<T>
+    ): Promise<Result<string[]>> {
+        try {
+            const absPath = pathMod.join(ROOT_PATH, path);
+            const buf = await fs.readFile(absPath);
+            let transformed = this.#transform(buf, this.#split, part);
+            if (typeof this.#postTransform === "function") {
+                transformed = this.#postTransform(transformed, part, ...args);
+            }
+            return success(transformed);
+        } catch (e) {
+            return failure(`${e}`);
         }
-        return transformed;
     }
 
     static #defaultTransform(s: Buffer, split: RegExp | string) {
