@@ -11,11 +11,8 @@ export type {
     Ctor,
     Class,
     Stringable,
-    ResultFailure,
-    ResultSuccess,
-    Result,
 } from "./ts/types";
-export {default as Day, DayResult} from "./ts/day";
+export {default as Day} from "./ts/day";
 export {default as Printable} from "./ts/printable";
 export {default as Vec2} from "./ts/vec2";
 export {default as Vec3} from "./ts/vec3";
@@ -55,5 +52,12 @@ export {
     type GraphMode,
 } from "./ts/graph";
 export {orient2, pointOnSegment2, segmentsIntersect2} from "./ts/geometry";
-export {success, failure, must} from "./ts/result";
+export {
+    success,
+    failure,
+    unwrap,
+    ResultFailure,
+    ResultSuccess,
+    Result,
+} from "./ts/result";
 export {hasKey} from "./ts/common";
