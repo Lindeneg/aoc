@@ -1,4 +1,4 @@
-import {Day, Rect, Vec2, Polygon2, Vec2Compressor, unwrap} from "../../cl";
+import {Day, Rect2, Vec2, Polygon2, Vec2Compressor, unwrap} from "../../cl";
 
 type Data = [Polygon2, Vec2[], Vec2Compressor | null];
 
@@ -10,11 +10,11 @@ const day9 = new Day(
             for (let j = i + 1; j < vecs.length; j++) {
                 const a = vecs[i];
                 const b = vecs[j];
-                const rect = unwrap(Rect.fromOppositePoints(a, b));
+                const rect = unwrap(Rect2.fromOppositePoints(a, b));
                 if (
                     part.two &&
                     !poly.containsRectangle(
-                        unwrap(Rect.compress(rect, compressor!))
+                        unwrap(Rect2.compress(rect, compressor!))
                     )
                 ) {
                     continue;
