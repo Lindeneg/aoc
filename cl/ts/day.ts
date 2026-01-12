@@ -6,12 +6,19 @@ import {hasKey} from "./common";
 import {success, failure, type Result} from "./result";
 import type {Nullable, AnyFn} from "./types";
 
+/** Part indicator for puzzle solutions. */
 type Part = Record<"one" | "two" | "isExample", boolean>;
 
+/** Configuration with custom input file path */
 type ConfigObj<T> = {path: string; want: T};
+
+/** Configuration allowing either just the expected answer or a custom path */
 type Config<T> = Nullable<ConfigObj<T> | T>;
+
+/** Configuration for both parts of a day's puzzle */
 type DayConfig<T> = [Config<T>, Config<T>];
 
+/** Extracts additional context arguments from solve function parameters */
 type CtxFromParams<T extends AnyFn> = Parameters<T> extends [
     any,
     any,
@@ -20,26 +27,36 @@ type CtxFromParams<T extends AnyFn> = Parameters<T> extends [
     ? Rest
     : never;
 
+/** Extracts the data type from solve function parameters */
 type DataFromParams<T extends AnyFn> = Parameters<T>[1];
 
+/** Solve function signature. */
 type SolveFn<TData = any, TReturn = any, TArgs extends Array<any> = any> = (
     part: Part,
     data: TData,
     ...args: TArgs
 ) => TReturn;
 
+/** Transform function for raw buffer to string array */
 type Transform = (s: Buffer, split: RegExp | string, part: Part) => string[];
+
+/**
+ * Post-transform function for further parsing after splitting. This is useful
+ * if you want the default transform but then also want to do some additional operations.
+ * */
 type PostTransform<TVal, TArgs extends Array<any>> = (
     s: string[],
     part: Part,
     ...args: TArgs
 ) => TVal;
 
+/** Type-safe post-transform function extracted from solve function */
 type PostTransformFn<T extends AnyFn> = PostTransform<
     DataFromParams<T>,
     CtxFromParams<T>
 >;
 
+/** Complete result information for a single puzzle part */
 type SolveResultObj<T> = {
     year: number;
     day: number;
@@ -51,17 +68,37 @@ type SolveResultObj<T> = {
     want: T;
 };
 
-// regardless of success state,
-// SolveResult always contains
-// a full object, as we have the
-// same information available in either case
+/**
+ * Result of running a puzzle part.
+ * Contains full result info in both success and failure cases.
+ */
 type SolveResult<T> = Result<
-    // succcess state
+    // Success state (answer matched expected)
     SolveResultObj<T>,
-    // failure state
+    // Failure state (answer didn't match or other error)
     SolveResultObj<T>
 >;
 
+const GREEN = "\x1b[32m";
+const RED = "\x1b[31m";
+const RESET = "\x1b[0m";
+
+/**
+ * Extract year and day from command-line arguments
+ * TODO: Consider alternative approach or add validation
+ * */
+const ROOT_PATH = process.argv[2] as string;
+const [YEAR, DAY] = ROOT_PATH.split("/")
+    .slice(-2)
+    .map((e) => +e);
+
+/**
+ * Default input file paths (created by `aoc` script)
+ * Can be overridden per-solve using DayConfig type
+ * */
+const DEFAULT_PATH = ["puzzle.in", "example.in"] as const;
+
+/** Container for multiple SolveResults providing clean stringified output. */
 class SolveResults<T> extends Printable {
     readonly #results: SolveResult<T>[];
 
@@ -106,22 +143,62 @@ class SolveResults<T> extends Printable {
     }
 }
 
-const GREEN = "\x1b[32m";
-const RED = "\x1b[31m";
-const RESET = "\x1b[0m";
-
-// TODO maybe get this another way
-// or use it as it is but do validation
-const ROOT_PATH = process.argv[2] as string;
-const [YEAR, DAY] = ROOT_PATH.split("/")
-    .slice(-2)
-    .map((e) => +e);
-
-// when `aoc` script is used, these paths are always created
-// by default, however consumer can provide custom paths
-// on a per-solve basis by using the DayConfig type.
-const DEFAULT_PATH = ["puzzle.in", "example.in"] as const;
-
+/**
+ * Handles AoC input file reading, parsing, test execution, and result validation.
+ *
+ * Basic usage
+ * ```ts
+ * const day1 = new Day(
+ *   (part, lines: string[]) => {
+ *     let answer = 0;
+ *     for (const line of lines) {
+ *       const num = parseInt(line);
+ *       if (part.one) answer += num;
+ *       if (part.two) answer += num * 2;
+ *     }
+ *     return answer;
+ *   },
+ *   // puzzles:  [part1, part2]
+ *   [100, {path: "/some/path", want: 200}],
+ *   // examples: [part1, part2]
+ *   [10, 20]
+ * );
+ *
+ * (async () => {
+ *   console.log(await day1.examples());
+ *   console.log(await day1.solve());
+ * })();
+ * ```
+ *
+ * With custom parsing
+ * ```ts
+ * const day2 = new Day(
+ *   (part, grids: Grid2<number>[]) => {
+ *     // Work with parsed Grid2 objects
+ *     return grids.length;
+ *   },
+ *   [42, 84]
+ * ).setPostTransform((lines) => {
+ *   // Parse lines into Grid2 objects
+ *   return lines.map(line =>
+ *     unwrap(Grid2.fromNested(line.split('').map(c => [Number(c)])))
+ *   );
+ * });
+ * ```
+ *
+ * With additional arguments
+ * ```ts
+ * const day3 = new Day(
+ *   (part, lines: string[], threshold: number) => {
+ *     return lines.filter(l => l.length > threshold).length;
+ *   },
+ *   [5, 10]
+ * );
+ *
+ * await day3.solve(0, 3);  // Run both parts with threshold=3
+ * await day3.solve(1, 5);  // Run only part 1 with threshold=5
+ * ```
+ */
 class Day<T extends SolveFn> {
     #fn: T;
     #puzzles: DayConfig<ReturnType<T>>;
@@ -139,33 +216,46 @@ class Day<T extends SolveFn> {
         this.#fn = fn;
         this.#puzzles = puzzles;
         this.#examples = examples;
-        this.#split = /\r?\n/;
+        this.#split = /\r?\n/; // Default: split on newlines
 
         this.#transform = Day.#defaultTransform;
         this.#postTransform = null;
         this.#ctx = null;
     }
 
+    /** Sets custom buffer transformation (before splitting). */
     setTransform(fn: Transform) {
         this.#transform = fn;
         return this;
     }
 
+    /** Sets custom parsing after line splitting. */
     setPostTransform(fn: Nullable<PostTransformFn<T>>) {
         this.#postTransform = fn;
         return this;
     }
 
+    /** Sets custom line splitting pattern used by default transform. */
     setSplit(s: RegExp | string) {
         this.#split = s;
         return this;
     }
 
+    /** Sets custom context string for result display. */
     setCtx(s: Nullable<string>) {
         this.#ctx = s;
         return this;
     }
 
+    /**
+     * Runs the solution against puzzle input.
+     *
+     * ```ts
+     * console.log(await day.solve());      // Run both parts
+     * console.log(await day.solve(1));     // Run only part 1
+     * console.log(await day.solve(0, 42)); // Both parts with arg=42
+     * ```
+     */
     async solve(
         part: number = 0,
         ...args: CtxFromParams<T>
@@ -175,6 +265,14 @@ class Day<T extends SolveFn> {
         );
     }
 
+    /**
+     * Runs the solution against example inputs.
+     *
+     * ```ts
+     * console.log(await day.examples());   // Run all examples, both parts
+     * console.log(await day.examples(1));  // Run all examples, part 1 only
+     * ```
+     */
     async examples(
         part: number = 0,
         ...args: CtxFromParams<T>

@@ -1,6 +1,7 @@
 import type {Point3} from "./types";
 import Printable from "./printable";
 
+/** 3D vector that works with `Point3`. */
 class Vec3 extends Printable implements Point3 {
     public x: number;
     public y: number;
@@ -107,6 +108,7 @@ class Vec3 extends Printable implements Point3 {
         return this.x * o.x + this.y * o.y + this.z * o.z;
     }
 
+    /** Euclidean distance */
     distance(o: Vec3) {
         const dx = this.x - o.x;
         const dy = this.y - o.y;
@@ -122,6 +124,7 @@ class Vec3 extends Printable implements Point3 {
         return new Vec3(this.x, this.y, this.z);
     }
 
+    /** Returns a string representation in format "(x,y,z)". */
     toString() {
         return `(${this.x},${this.y},${this.z})`;
     }

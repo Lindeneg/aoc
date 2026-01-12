@@ -10,12 +10,39 @@ export const UF_MODE = {
 export type UfMode = (typeof UF_MODE)[keyof typeof UF_MODE];
 
 export interface Uf<T = any> {
+    /** Finds the root of x's set with path compression */
     find(x: T): Result<T>;
+    /** Finds the root of x's set without path compression */
     findNonCompress(x: T): Result<T>;
+    /** Merges the sets containing x and y, returns new size */
     merge(x: T, y: T): Result<number>;
+    /** Returns sizes of all disjoint sets, sorted descending */
     sizes(): number[];
 }
 
+/**
+ * Object-keyed union-find implementation.
+ *
+ * Uses Map for storage, supporting any Stringable type.
+ * Implements union by size and path compression for optimal performance.
+ *
+ * Basic usage
+ * ```ts
+ * const elements = [new Vec2(0, 0), new Vec2(1, 0), new Vec2(2, 0)];
+ * const uf = new UfObjectKeyed(elements);
+ *
+ * // Merge two sets
+ * unwrap(uf.merge(elements[0], elements[1])); // Returns 2 (new size)
+ *
+ * // Check if in same set
+ * const root0 = unwrap(uf.find(elements[0]));
+ * const root1 = unwrap(uf.find(elements[1]));
+ * console.log(root0.equals(root1)); // true
+ *
+ * // Get all set sizes
+ * console.log(uf.sizes()); // [2, 1] - two elements in one set, one alone
+ * ```
+ */
 export class UfObjectKeyed<T extends Stringable>
     extends Printable
     implements Uf<T>
@@ -31,6 +58,7 @@ export class UfObjectKeyed<T extends Stringable>
         for (const el of iterableData) this.makeSet(el);
     }
 
+    /** Adds a new element as a singleton set (no-op if already exists). */
     makeSet(x: T) {
         if (this.#parent.has(x)) return;
         this.#parent.set(x, x);
@@ -134,18 +162,38 @@ export class UfObjectKeyed<T extends Stringable>
     }
 }
 
-// i just wanna see how much better this performs
+/**
+ * Union-find using bit-packed integer storage.
+ *
+ * Uses Int32Array for maximum performance with integer indices.
+ * Negative values indicate roots (size = -value), positive values point to parent index.
+ *
+ * ```ts
+ * const width = 100, height = 100;
+ * const uf = new UfBitPacked(width * height);
+ *
+ * // Connect adjacent cells
+ * for (let y = 0; y < height; y++) {
+ *   for (let x = 0; x < width - 1; x++) {
+ *     const idx1 = y * width + x;
+ *     const idx2 = y * width + x + 1;
+ *     const newSize: number = unwrap(uf.merge(idx1, idx2));
+ *   }
+ * }
+ *
+ * // Find connected components
+ * const sizes = uf.sizes();
+ * console.log(`Largest component: ${sizes[0]} cells`);
+ * ```
+ */
 export class UfBitPacked extends Printable implements Uf<number> {
-    // if negative n, then node is root and size is -n
-    // if positive n, then node belongs to root at index n
     #parent: Int32Array;
-    // used in toString for debugging
     #getEl: (idx: number) => Stringable;
 
     constructor(count: number, getEl?: (idx: number) => Stringable) {
         super();
         this.#parent = new Int32Array(count);
-        this.#parent.fill(-1);
+        this.#parent.fill(-1); // All start as roots with size 1
         this.#getEl =
             typeof getEl === "function" ? getEl : (idx: number) => idx;
     }
@@ -160,7 +208,7 @@ export class UfBitPacked extends Printable implements Uf<number> {
         while (this.#parent[root] >= 0) {
             root = this.#parent[root];
         }
-        // compress path to root
+        // Compress path to root
         while (x !== root) {
             const p = this.#parent[x];
             this.#parent[x] = root;

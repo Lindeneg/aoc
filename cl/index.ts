@@ -4,21 +4,22 @@ export type {
     Point,
     Point2,
     Point3,
-    Positionable,
+    Coordinates2,
+    Coordinates3,
     Comparable,
-    Compressible,
     AnyObj,
     Ctor,
     Class,
     Stringable,
+    Copyable,
 } from "./ts/types";
 export {default as Day} from "./ts/day";
 export {default as Printable} from "./ts/printable";
 export {default as Vec2} from "./ts/vec2";
 export {default as Vec3} from "./ts/vec3";
-export {default as Rect} from "./ts/rect";
+export {default as Rect2} from "./ts/rect2";
 export {default as Polygon2} from "./ts/polygon2";
-export {default as Vec2Compressor} from "./ts/vec2-compressor";
+export {Vec2Compressor, type Compressible} from "./ts/compressor";
 export {default as VertexGraph} from "./ts/vertex-graph";
 export {
     default as Grid2,
@@ -60,4 +61,4 @@ export {
     ResultSuccess,
     Result,
 } from "./ts/result";
-export {hasKey} from "./ts/common";
+export {hasKey, errToStr} from "./ts/common";

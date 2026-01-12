@@ -1,8 +1,10 @@
 import Printable from "./printable";
 import type {Result} from "./result";
-import type {Compressible, Point2} from "./types";
+import type {Point2} from "./types";
+import type {Compressible} from "./compressor";
 
-class Vec2 extends Printable implements Point2 {
+/** Simple 2D vector that works with `Point2` */
+class Vec2 extends Printable implements Point2<Vec2> {
     public x: number;
     public y: number;
 
@@ -104,6 +106,7 @@ class Vec2 extends Printable implements Point2 {
         return this.x * o.x + this.y * o.y;
     }
 
+    /** Euclidean distance */
     distance(o: Vec2) {
         const dx = this.x - o.x;
         const dy = this.y - o.y;
@@ -118,6 +121,7 @@ class Vec2 extends Printable implements Point2 {
         return new Vec2(this.x, this.y);
     }
 
+    /** Returns String in format "(x,y)" */
     toString() {
         return `(${this.x},${this.y})`;
     }

@@ -9,13 +9,56 @@ import {
     type AddEdgeFromDataDefaultParams,
     type AddEdgeFromVerticiesDefaultParams,
 } from "./graph";
+import {errToStr} from "./common";
 import {success, failure, emptySuccess, type Result} from "./result";
 import type {Class, Ctor, Nullable} from "./types";
 
 /**
- * Generic VertexGraph. It only knows about getting, finding and adding
- * verticies and associated edges. It's very generic and allows for type-safe
- * custom extensions. Can be used both for state-based and spatial-based graphs.
+ * Generic graph implementation supporting custom vertex types and hash functions.
+ *
+ * Provides complete graph functionality with type-safe vertex and edge management.
+ * Works for both spatial graphs (positions, grid cells) and state-space graphs
+ * (game states, configurations).
+ *
+ * Simple spatial graph
+ * ```ts
+ * class Position extends Vertex<Vec2> {
+ *   constructor(pos: Vec2) {
+ *     super(pos);
+ *   }
+ *   toString() {
+ *     return `${this.data}`;
+ *   }
+ * }
+ *
+ * const graph = new VertexGraph(
+ *   Position,
+ *   (pos) => `${pos.x},${pos.y}`  // Hash function (doesnt have to return string)
+ * );
+ *
+ * unwrap(graph.addVertex(new Vec2(0, 0)));
+ * unwrap(graph.addVertex(new Vec2(1, 0)));
+ * unwrap(graph.addEdgeFromData(new Vec2(0, 0), new Vec2(1, 0)));
+ * ```
+ *
+ * State-space graph with custom edge properties
+ * ```ts
+ * class State extends Vertex<number[], {cost: number}> {
+ *   constructor(data: number[]) {
+ *     super(data);
+ *   }
+ * }
+ *
+ * const graph = new VertexGraph(
+ *   State,
+ *   (state) => state.join(','),
+ *   GRAPH_MODE.DIRECTED
+ * );
+ *
+ * const s1 = unwrap(graph.addVertex([0, 0]));
+ * const s2 = unwrap(graph.addVertex([1, 0]));
+ * unwrap(graph.addEdgeFromVerticies(s1, s2, {cost: 5}));
+ * ```
  */
 class VertexGraph<
         TNode extends Class<Vertex<any, any>>,
@@ -66,33 +109,27 @@ class VertexGraph<
     addVertex(
         ...args: ConstructorParameters<TNode>
     ): Result<InstanceType<TNode>, {hash?: ReturnType<THasher>}> {
+        let vertex: InstanceType<TNode>;
         try {
-            const vertex = new this.#Vertex(...args) as InstanceType<TNode>;
-            try {
-                const hash = this.#hasher(vertex.data);
-                if (this.#vertices.has(hash)) {
-                    return failure(
-                        "VERTEX-GRAPH: vertex already exist: " + hash,
-                        {
-                            hash,
-                        }
-                    );
-                }
-                this.#vertices.set(hash, vertex);
-                return success(vertex);
-            } catch (e) {
-                return failure(
-                    `VERTEX-GRAPH: hasher function threw exception: ${
-                        e instanceof Error ? e.message : String(e)
-                    }`,
-                    {}
-                );
-            }
+            vertex = new this.#Vertex(...args) as InstanceType<TNode>;
         } catch (e) {
             return failure(
-                `VERTEX-GRAPH: failed to construct vertex: ${
-                    e instanceof Error ? e.message : String(e)
-                }`,
+                `VERTEX-GRAPH: failed to construct vertex: ${errToStr(e)}`,
+                {}
+            );
+        }
+        try {
+            const hash = this.#hasher(vertex.data);
+            if (this.#vertices.has(hash)) {
+                return failure("VERTEX-GRAPH: vertex already exist: " + hash, {
+                    hash,
+                });
+            }
+            this.#vertices.set(hash, vertex);
+            return success(vertex);
+        } catch (e) {
+            return failure(
+                `VERTEX-GRAPH: hasher function threw exception: ${errToStr(e)}`,
                 {}
             );
         }
@@ -106,29 +143,26 @@ class VertexGraph<
             oldVertex: Nullable<InstanceType<TNode>>,
         ]
     > {
+        let vertex: InstanceType<TNode>;
         try {
-            const vertex = new this.#Vertex(...args) as InstanceType<TNode>;
-            try {
-                const hash = this.#hasher(vertex.data);
-                let old: Nullable<InstanceType<TNode>> = null;
-                if (this.#vertices.has(hash)) {
-                    // TODO: remove old edge connections
-                    old = this.#vertices.get(hash)!;
-                }
-                this.#vertices.set(hash, vertex);
-                return success([vertex, old]);
-            } catch (e) {
-                return failure(
-                    `VERTEX-GRAPH: hasher function threw exception: ${
-                        e instanceof Error ? e.message : String(e)
-                    }`
-                );
-            }
+            vertex = new this.#Vertex(...args) as InstanceType<TNode>;
         } catch (e) {
             return failure(
-                `VERTEX-GRAPH: failed to construct vertex: ${
-                    e instanceof Error ? e.message : String(e)
-                }`
+                `VERTEX-GRAPH: failed to construct vertex: ${errToStr(e)}`
+            );
+        }
+        try {
+            const hash = this.#hasher(vertex.data);
+            let old: Nullable<InstanceType<TNode>> = null;
+            if (this.#vertices.has(hash)) {
+                // TODO: remove old edge connections
+                old = this.#vertices.get(hash)!;
+            }
+            this.#vertices.set(hash, vertex);
+            return success([vertex, old]);
+        } catch (e) {
+            return failure(
+                `VERTEX-GRAPH: hasher function threw exception: ${errToStr(e)}`
             );
         }
     }
@@ -147,11 +181,7 @@ class VertexGraph<
             }
             return emptySuccess();
         } catch (e) {
-            return failure(
-                `VERTEX-GRAPH: failed to add edge: ${
-                    e instanceof Error ? e.message : String(e)
-                }`
-            );
+            return failure(`VERTEX-GRAPH: failed to add edge: ${errToStr(e)}`);
         }
     }
 

@@ -27,22 +27,20 @@ export const ALL_DIRECTIONS = [
 /**
  * 2D grid with fixed dimensions and neighbor iteration utilities.
  *
- * Constructor calling is not allowed, since there exist a state
- * where a grid is considered invalid and thus should not be constructed.
- * One example is when the size is greater than the data capacity.
- *
- * Instead make use of:
- * `Grid2.make`, `Grid2.fromNested` or `Grid2.fromNestedWithPadding`
- *
- * All of which returns a `Result` object.
+ * Direct construction is private to prevent invalid states. Use factory methods:
+ * - `Grid2.make()`                  - Create from flat array with dimensions
+ * - `Grid2.fromNested()`            - Create from 2D array
+ * - `Grid2.fromNestedWithPadding()` - Create from 2D array with automatic padding
  */
 class Grid2<T> extends Printable {
     readonly #width: number;
     readonly #height: number;
     readonly #size: number;
     readonly #data: T[];
+    // avoid repeated allocations
     readonly #vecCache: Map<number, Vec2>;
 
+    /** Private constructor. Use factory methods instead. */
     private constructor(data: T[], width: number, height: number) {
         super();
         this.#width = width;
@@ -152,6 +150,16 @@ class Grid2<T> extends Printable {
         return this.outOfBoundsEx(vec.x, vec.y);
     }
 
+    /**
+     * Iterates over neighbors of a cell in specified directions.
+     * Only calls the callback for in-bounds neighbors.
+     *
+     * ```ts
+     * grid.forEachDirection(new Vec2(5, 5), (val, pos, dir) => {
+     *   console.log(`${dir}: ${val} at ${pos}`);
+     * }, STRAIGHT_DIRECTIONS);
+     * ```
+     */
     forEachDirection(
         origin: Vec2,
         fn: (val: T, next: Vec2, dir: Vec2) => void,
@@ -159,20 +167,27 @@ class Grid2<T> extends Printable {
     ): void {
         for (const dir of directions) {
             const next = origin.add(dir);
-            // could be out-of-bounds if we're at an edge
-            // and moving away from the center of the grid
+            // Skip if out-of-bounds (happens at edges)
             const result = this.getFromVec(next);
             if (result.ok) fn(result.data, next, dir);
         }
     }
 
+    /**
+     * Iterates over grid cells until the callback returns true.
+     * Callback receives (value, index). Return true to stop iteration.
+     */
     forSome(fn: (val: T, idx: number) => boolean): void {
         for (let i = 0; i < this.size; i++) {
-            // this should never fail, so we use unwrap
+            // This should never fail since we're iterating valid indices
             if (fn(unwrap(this.getFromIdx(i)), i)) return;
         }
     }
 
+    /**
+     * Iterates over all grid cells.
+     * Callback receives (value, index) for each cell
+     */
     forEach(fn: (val: T, idx: number) => void): void {
         this.forSome((...args) => {
             fn(...args);
@@ -180,6 +195,7 @@ class Grid2<T> extends Printable {
         });
     }
 
+    /** Finds the first cell matching a predicate. */
     findOne(predicate: (val: T, idx: number) => boolean): number {
         let found: number = -1;
         this.forSome((val, idx) => {
@@ -192,6 +208,7 @@ class Grid2<T> extends Printable {
         return found;
     }
 
+    /** Finds all cells matching a predicate, up to a limit. */
     findMany(
         predicate: (val: T, idx: number) => boolean,
         limit = Infinity
@@ -205,6 +222,10 @@ class Grid2<T> extends Printable {
         return result;
     }
 
+    /**
+     * Returns a string representation of the grid.
+     * Values are space-separated, rows are newline-separated.
+     */
     toString(): string {
         let out = "";
         for (let i = 0; i < this.size; i++) {
@@ -220,6 +241,16 @@ class Grid2<T> extends Printable {
         return new Grid2(structuredClone(this.#data), this.width, this.height);
     }
 
+    /**
+     * Creates a grid from a flat array with specified dimensions.
+     *
+     * ```ts
+     * const grid = unwrap(Grid2.make([1, 2, 3, 4], 2, 2));
+     * // Creates a 2x2 grid:
+     * // 1 2
+     * // 3 4
+     * ```
+     */
     static make<T>(data: T[], width: number, height: number): Result<Grid2<T>> {
         if (width * height > data.length) {
             return failure(
@@ -230,19 +261,39 @@ class Grid2<T> extends Printable {
     }
 
     /**
-     * Creates a new grid from a nested array but does not
-     * garautuee that `grid.size === data.length`. Either make sure
-     * your nested array is padded or simply use `grid.FromNestedWithPadding`
-     * */
+     * Creates a grid from a nested array.
+     *
+     * Does not guarantee grid.size === data.flat().length if rows have unequal lengths.
+     * The grid width is determined by the first row's length.
+     * Use fromNestedWithPadding() for automatic padding of short rows.
+     *
+     * ```ts
+     * const grid = unwrap(Grid2.fromNested([
+     *   ['a', 'b', 'c'],
+     *   ['d', 'e', 'f']
+     * ]));
+     * ```
+     */
     static fromNested<T>(nested: T[][]): Result<Grid2<T>> {
         return Grid2.make(nested.flat(), nested[0].length, nested.length);
     }
 
     /**
-     * Creates a new grid from a nested array and ensures
-     * the dimensions are the same across all nested arrays
-     * such that we can garautuee `grid.size === data.length`
-     * */
+     * Creates a grid from a nested array with automatic padding for short rows.
+     *
+     * Guarantees grid.size === (maxRowLength * rowCount) by padding short rows.
+     * The grid width is determined by the longest row.
+     *
+     * ```ts
+     * const grid = unwrap(Grid2.fromNestedWithPadding([
+     *   ['a', 'b'],
+     *   ['c', 'd', 'e']
+     * ], 'X'));
+     * // Creates a 3x2 grid:
+     * // a b X
+     * // c d e
+     * ```
+     */
     static fromNestedWithPadding<T>(
         data: T[][],
         defaultValue: T
