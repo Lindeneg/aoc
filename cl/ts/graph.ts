@@ -185,7 +185,7 @@ export abstract class Vertex<
     }
 
     toString(): string {
-        return `Vertex: ${this.data.toString()}, edges: ${this.edges.map((e) =>
+        return `${this.data.toString()}, edges: ${this.edges.map((e) =>
             e.next.data.toString()
         )}`;
     }
