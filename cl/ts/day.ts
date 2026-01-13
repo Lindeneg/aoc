@@ -7,7 +7,7 @@ import {success, failure, type Result} from "./result";
 import type {Nullable, AnyFn} from "./types";
 
 /** Part indicator for puzzle solutions. */
-type Part = Record<"one" | "two" | "isExample", boolean>;
+export type Part = Record<"one" | "two" | "isExample", boolean>;
 
 /** Configuration with custom input file path */
 type ConfigObj<T> = {path: string; want: T};
