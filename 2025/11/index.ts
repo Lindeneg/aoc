@@ -45,26 +45,18 @@ function distinctPathCount(
     graph: Graph,
     start: string,
     end: string,
-    mustContain: string[],
-    path: string[] = []
+    mustContain: string[]
 ) {
     let answer = 0;
     const startVertex = graph.getVertex(start)!;
     for (const edge of startVertex.edges) {
-        path.push(edge.next.data);
         if (graph.hash(end) === graph.hash(edge.next.data)) {
-            const hasRequired = mustContain.reduce((result, required) => {
-                return result && path.includes(required);
-            }, true);
-            return Number(hasRequired);
+            //            const hasRequired = mustContain.reduce((result, required) => {
+            //                return result && path.includes(required);
+            //            }, true);
+            return 1;
         }
-        answer += distinctPathCount(
-            graph,
-            edge.next.data,
-            end,
-            mustContain,
-            path
-        );
+        answer += distinctPathCount(graph, edge.next.data, end, mustContain);
     }
     return answer;
 }
