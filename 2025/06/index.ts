@@ -48,11 +48,7 @@ function makeCalculation(operation = null, operands = []): Calculation {
 
 function pushOperandString(calculation: Calculation, operandString: string) {
     calculation.operands.push(
-        ...operandString.split(" ").reduce((acc, cur) => {
-            if (!cur) return acc;
-            acc.push(Number(cur));
-            return acc;
-        }, [] as number[])
+        ...operandString.split(" ").filter(Boolean).map(Number)
     );
     return calculation;
 }

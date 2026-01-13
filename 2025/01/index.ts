@@ -6,25 +6,27 @@ const LEFT = "L";
 const day1 = new Day(
     (part, buf: string[], dial: number) => {
         let answer = 0;
+        const dialSize = DIAL_LIMIT + 1;
+
         for (let i = 0; i < buf.length; i++) {
             const row = buf[i];
             const isLeft = row[0] === LEFT;
             const number = parseInt(row.slice(1));
 
-            for (let j = 0; j < number; j++) {
-                if (isLeft) {
-                    dial--;
-                    if (dial < 0) {
-                        if (part.two) answer++;
-                        dial = DIAL_LIMIT;
-                    }
-                } else {
-                    dial++;
-                    if (dial > DIAL_LIMIT) {
-                        if (part.two) answer++;
-                        dial = 0;
-                    }
+            if (isLeft) {
+                const newDial = dial - number;
+                if (newDial < 0 && part.two) {
+                    const wraps = Math.ceil(-newDial / dialSize);
+                    answer += wraps;
                 }
+                dial = ((newDial % dialSize) + dialSize) % dialSize;
+            } else {
+                const newDial = dial + number;
+                if (newDial > DIAL_LIMIT && part.two) {
+                    const wraps = Math.floor(newDial / dialSize);
+                    answer += wraps;
+                }
+                dial = newDial % dialSize;
             }
 
             if (part.one && dial === 0) answer++;

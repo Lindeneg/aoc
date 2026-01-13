@@ -1,18 +1,16 @@
 import {Day} from "../../cl";
 
-// TODO PART 2!!!! USE YOUR FUCKING BRAIN YOU DONKEY
-
 const day3 = new Day(
     (part, buf: string[]) => {
-        let answer = 0;
+        let answer = 0n;
         for (const line of buf) {
             if (part.one) answer += makeLargestDigit(line, 2);
-            //if (part.to) answer += makeLargestDigit(line, 12);
+            if (part.two) answer += makeLargestDigit(line, 12);
         }
         return answer;
     },
-    [17263, null],
-    [357, 3121910778619]
+    [17263n, 170731717900423n],
+    [357n, 3121910778619n]
 );
 
 function findLargestDigit(s: string, start: number, end: number) {
@@ -27,16 +25,19 @@ function findLargestDigit(s: string, start: number, end: number) {
     return match;
 }
 
-function makeLargestDigit(s: string, numOfDigits: number) {
-    let size = s.length - numOfDigits + 1;
+function makeLargestDigit(s: string, numOfDigits: number): bigint {
     let result = "";
     let start = 0;
+    let remaining = numOfDigits;
+
     for (let _ = 0; _ < numOfDigits; _++) {
-        const largest = findLargestDigit(s, start, start + size);
+        const end = s.length - remaining + 1;
+        const largest = findLargestDigit(s, start, end);
         result += largest.value.toString();
         start = largest.index + 1;
+        remaining--;
     }
-    return Number(result);
+    return BigInt(result);
 }
 
 (async () => {

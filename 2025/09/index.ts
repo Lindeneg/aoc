@@ -6,10 +6,27 @@ const day9 = new Day(
     (part, [poly, vecs, compressor]: Data) => {
         if (part.two && !compressor) return 0;
         let answer = 0;
-        for (let i = 0; i < vecs.length; i++) {
-            for (let j = i + 1; j < vecs.length; j++) {
+
+        const sortedIndices = Array.from(
+            {length: vecs.length},
+            (_, i) => i
+        ).sort((i, j) => {
+            const a = vecs[i];
+            const b = vecs[j];
+            return a.x + a.y - (b.x + b.y);
+        });
+
+        for (let ii = 0; ii < sortedIndices.length; ii++) {
+            const i = sortedIndices[ii];
+            for (let jj = ii + 1; jj < sortedIndices.length; jj++) {
+                const j = sortedIndices[jj];
                 const a = vecs[i];
                 const b = vecs[j];
+
+                const maxPossibleArea =
+                    Math.abs(b.x - a.x + 1) * Math.abs(b.y - a.y + 1);
+                if (maxPossibleArea <= answer) continue;
+
                 const rect = unwrap(Rect2.fromOppositePoints(a, b));
                 if (
                     part.two &&

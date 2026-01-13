@@ -25,6 +25,69 @@ class MachineVertex extends Vertex<Configuration> {
     }
 }
 
+const day10 = new Day(
+    (part, machines: Machine[]) => {
+        let answer = 0;
+
+        for (const machine of machines) {
+            if (part.one) {
+                const graph = new VertexGraph(
+                    MachineVertex,
+                    (cfg) => cfg.join(","),
+                    GRAPH_MODE.DIRECTED
+                );
+
+                const start = Array(machine.target.length).fill(0);
+                const startHash = graph.hash(start);
+                const endHash = graph.hash(machine.target);
+
+                unwrap(graph.addVertex(start));
+
+                const result = unwrap(
+                    bfs(graph, startHash, endHash, (vertex) => {
+                        // expand function
+                        return machine.buttons.map((button) => {
+                            const next = vertex.data.slice();
+                            for (const idx of button) {
+                                next[idx] = next[idx] === 0 ? 1 : 0;
+                            }
+                            return next;
+                        });
+                    })
+                );
+
+                answer += getSearchResultDistance(result);
+            } else {
+                const cost = solvePart2(machine);
+                if (cost < Infinity) {
+                    answer += cost;
+                }
+            }
+        }
+
+        return answer;
+    },
+    [441, 18559],
+    [7, 33]
+).setPostTransform((transformed, part) => {
+    return transformed.map((line) => {
+        const diagramMatch = line.match(/\[([.#]+)\]/)!;
+        const buttonsMatch = [...line.matchAll(/\(([\d,]+)\)/g)];
+        const joltageMatch = [...line.matchAll(/\{([\d,]+)\}/g)];
+
+        const target: Configuration = [...diagramMatch[1]].map((c) =>
+            Number(c === "#")
+        );
+
+        const buttons = buttonsMatch.map((m) => m[1].split(",").map(Number));
+        const joltage: Configuration = joltageMatch
+            .map((m) => m[1].split(",").map(Number))
+            .flat();
+
+        return {target: part.one ? target : joltage, buttons};
+    });
+});
+
 function solvePart2(machine: Machine): number {
     const {target, buttons} = machine;
     const memo = new Map<string, number>();
@@ -104,69 +167,6 @@ function findValidPatterns(
 
     return validPatterns;
 }
-
-const day10 = new Day(
-    (part, machines: Machine[]) => {
-        let answer = 0;
-
-        for (const machine of machines) {
-            if (part.one) {
-                const graph = new VertexGraph(
-                    MachineVertex,
-                    (cfg) => cfg.join(","),
-                    GRAPH_MODE.DIRECTED
-                );
-
-                const start = Array(machine.target.length).fill(0);
-                const startHash = graph.hash(start);
-                const endHash = graph.hash(machine.target);
-
-                unwrap(graph.addVertex(start));
-
-                const result = unwrap(
-                    bfs(graph, startHash, endHash, (vertex) => {
-                        // expand function
-                        return machine.buttons.map((button) => {
-                            const next = vertex.data.slice();
-                            for (const idx of button) {
-                                next[idx] = next[idx] === 0 ? 1 : 0;
-                            }
-                            return next;
-                        });
-                    })
-                );
-
-                answer += getSearchResultDistance(result);
-            } else {
-                const cost = solvePart2(machine);
-                if (cost < Infinity) {
-                    answer += cost;
-                }
-            }
-        }
-
-        return answer;
-    },
-    [441, 18559],
-    [7, 33]
-).setPostTransform((transformed, part) => {
-    return transformed.map((line) => {
-        const diagramMatch = line.match(/\[([.#]+)\]/)!;
-        const buttonsMatch = [...line.matchAll(/\(([\d,]+)\)/g)];
-        const joltageMatch = [...line.matchAll(/\{([\d,]+)\}/g)];
-
-        const target: Configuration = [...diagramMatch[1]].map((c) =>
-            Number(c === "#")
-        );
-
-        const buttons = buttonsMatch.map((m) => m[1].split(",").map(Number));
-        const joltage: Configuration = joltageMatch
-            .map((m) => m[1].split(",").map(Number))
-            .flat();
-
-        return {target: part.one ? target : joltage, buttons};
-    });
-});
 
 (async () => {
     console.log(await day10.examples());

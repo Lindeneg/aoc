@@ -18,19 +18,20 @@ const day4 = new Day(
                 }
             });
         } else if (part.two) {
-            let newGrid = grid.copy();
+            grid = grid.copy();
             while (true) {
-                let removedCount = 0;
+                const toRemove: number[] = [];
                 grid.forEach((value, idx) => {
                     if (value === EMPTY) return;
                     if (adjacentCount(grid, idx) < MAX_ADJACENT_PAPERROLLS) {
-                        answer++;
-                        newGrid.setFromIdx(idx, EMPTY);
-                        removedCount++;
+                        toRemove.push(idx);
                     }
                 });
-                if (removedCount <= 0) break;
-                grid = newGrid.copy();
+                if (toRemove.length === 0) break;
+                for (const idx of toRemove) {
+                    unwrap(grid.setFromIdx(idx, EMPTY));
+                }
+                answer += toRemove.length;
             }
         }
 
